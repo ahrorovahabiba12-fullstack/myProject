@@ -40,7 +40,10 @@
     "haveAccount": "Уже есть аккаунт?",
     "noAccount": "Нет аккаунта?",
     "switchToLogin": "Войти",
-    "switchToRegister": "Зарегистрироваться"
+    "switchToRegister": "Зарегистрироваться",
+    "parentEmailOptional": "Email родителя (необязательно)",
+    "loginError": "Неверный email или пароль",
+    "registerError": "Ошибка при регистрации"
   },
   "dashboard": {
     "greeting": "Привет, {{name}}! 👋",
@@ -84,7 +87,11 @@
       "Каждый вопрос — дверь к новому знанию.",
       "Ты можешь это сделать — нужно только начать.",
       "Постоянство важнее таланта."
-    ]
+    ],
+    "noTasksTitle": "На сегодня плана нет",
+    "noTasksDesc": "Заполните профиль или создайте недельный план с помощью AI.",
+    "noRecommendation": "Пока нет рекомендаций. Заполните профиль.",
+    "discussWithAI": "Обсудить с AI →"
   },
   "nav_sidebar": {
     "dashboard": "Главная",
@@ -104,7 +111,8 @@
     "language": "Язык",
     "appearance": "Внешний вид",
     "logout": "Выйти",
-    "confirmLogout": "Вы действительно хотите выйти из системы?"
+    "confirmLogout": "Вы действительно хотите выйти из системы?",
+    "toggleTheme": "Сменить тему"
   },
   "topbar": {
     "streak": "дней подряд",
@@ -127,7 +135,8 @@
     "sendLabel": "Отправить",
     "suggestion1": "Какую тему мне изучать?",
     "suggestion2": "Составь мне учебный план",
-    "suggestion3": "Помоги выбрать профессию"
+    "suggestion3": "Помоги выбрать профессию",
+    "sendError": "Сообщение не отправлено. Попробуйте ещё раз."
   },
   "quiz": {
     "title": "Тесты",
@@ -165,6 +174,8 @@
     "errorLoad": "Не удалось загрузить план.",
     "emptyTitle": "Плана пока нет",
     "emptyDesc": "Нажмите кнопку выше, чтобы AI создал персональный недельный план.",
+    "sundayEmptyTitle": "Сегодня выходной",
+    "sundayEmptyDesc": "Новый недельный план появится в понедельник. При желании можно потренироваться по любому предмету в разделе «Тесты».",
     "minutes": "мин",
     "durationCompleted": "{{minutes}} мин {{seconds}} сек",
     "durationSecondsOnly": "{{seconds}} сек",
@@ -248,7 +259,16 @@
     "save": "Сохранить",
     "grade": "класс",
     "saved": "Сохранено ✓",
-    "remove": "удалить"
+    "remove": "удалить",
+    "parentTitle": "Родитель",
+    "parentHint": "Укажите email родителя, чтобы он видел ваши результаты в своём кабинете.",
+    "parentLinked": "Привязан: {{name}} ({{email}})",
+    "parentNotLinked": "Родитель пока не привязан.",
+    "parentEmailPlaceholder": "email родителя",
+    "parentLinkButton": "Привязать",
+    "parentLinkedSuccess": "Родитель привязан ✓",
+    "parentNotFound": "Аккаунт родителя с таким email не найден. Сначала родитель должен зарегистрироваться.",
+    "parentLinkError": "Не удалось привязать. Попробуйте ещё раз."
   },
   "parent": {
     "headerTitle": "AI Advisor — Панель родителя",
@@ -256,7 +276,7 @@
     "logout": "Выйти",
     "welcome": "Добро пожаловать",
     "noChildTitle": "Пока нет привязанного ребёнка",
-    "noChildDesc": "Ваш ребёнок должен указать ваш email при регистрации.",
+    "noChildDesc": "Ваш ребёнок должен указать ваш email в своём профиле (или при регистрации).",
     "progressTitle": "Прогресс вашего ребёнка",
     "weeklyStudy": "Занятия за неделю",
     "minutes": "мин",
@@ -356,7 +376,7 @@
     "statusInactive": "Неактивен",
     "questionsBySubjectHint": "Распределение вопросов по предметам",
     "usersTitle": "Пользователи",
-    "searchPlaceholder": "Поиск по имени или телефону",
+    "searchPlaceholder": "Поиск по имени, email или телефону",
     "colPhone": "Телефон",
     "colRole": "Роль",
     "colAction": "Действие",

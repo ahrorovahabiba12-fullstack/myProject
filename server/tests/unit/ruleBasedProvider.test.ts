@@ -8,6 +8,7 @@ describe("RuleBasedProvider.generateLearningPlan — weak-subject weighting", ()
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [{ code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" }],
       neutralSubjects: [{ code: "SCIENCE", nameUz: "Tabiatshunoslik", nameRu: "Естествознание" }],
       availableMinutesPerDay: 90,
@@ -25,6 +26,7 @@ describe("RuleBasedProvider.generateLearningPlan — weak-subject weighting", ()
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [{ code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" }],
       neutralSubjects: [],
       availableMinutesPerDay: 90,
@@ -42,6 +44,7 @@ describe("RuleBasedProvider.generateLearningPlan — weak-subject weighting", ()
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [],
       neutralSubjects: [],
       availableMinutesPerDay: 90,
@@ -57,6 +60,7 @@ describe("RuleBasedProvider.generateLearningPlan — weak-subject weighting", ()
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [],
+      mediumSubjects: [],
       strongSubjects: [],
       neutralSubjects: [],
       availableMinutesPerDay: 90,
@@ -70,6 +74,7 @@ describe("RuleBasedProvider.generateLearningPlan — weak-subject weighting", ()
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [],
+      mediumSubjects: [],
       strongSubjects: [],
       neutralSubjects: [
         { code: "MATH", nameUz: "Matematika", nameRu: "Математика" },
@@ -92,6 +97,7 @@ describe("RuleBasedProvider.generateLearningPlan — multi-subject variety (neut
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [{ code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" }],
       neutralSubjects: [
         { code: "HISTORY", nameUz: "Tarix", nameRu: "История" },
@@ -111,6 +117,7 @@ describe("RuleBasedProvider.generateLearningPlan — multi-subject variety (neut
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [{ code: "MATH2", nameUz: "Algebra", nameRu: "Алгебра" }],
       neutralSubjects: [{ code: "HISTORY", nameUz: "Tarix", nameRu: "История" }],
       availableMinutesPerDay: 90,
@@ -126,6 +133,7 @@ describe("RuleBasedProvider.generateLearningPlan — multi-subject variety (neut
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [],
       neutralSubjects: [{ code: "HISTORY", nameUz: "Tarix", nameRu: "История" }],
       availableMinutesPerDay: 15, // only enough for the primary block
@@ -138,6 +146,7 @@ describe("RuleBasedProvider.generateLearningPlan — multi-subject variety (neut
     const plan = await provider.generateLearningPlan({
       grade: 8,
       weakSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      mediumSubjects: [],
       strongSubjects: [{ code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" }],
       neutralSubjects: [],
       availableMinutesPerDay: 90,
@@ -146,6 +155,46 @@ describe("RuleBasedProvider.generateLearningPlan — multi-subject variety (neut
     const englishEntries = plan.days.filter((d) => d.subjectCode === "ENGLISH");
     // ENGLISH appears both as its own primary turn and as the fallback secondary on MATH days.
     expect(englishEntries.length).toBeGreaterThan(1);
+  });
+});
+
+describe("RuleBasedProvider.generateLearningPlan — MEDIUM-level subjects", () => {
+  const provider = new RuleBasedProvider();
+  const MEDIUM_ONLY = [
+    { code: "MATH", nameUz: "Matematika", nameRu: "Математика" },
+    { code: "PHYSICS", nameUz: "Fizika", nameRu: "Физика" },
+    { code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" },
+  ];
+
+  it("plans real subjects for a student who tested every subject at MEDIUM, never a subject-less 'general review' week (the reported bug)", async () => {
+    const plan = await provider.generateLearningPlan({
+      grade: 8,
+      weakSubjects: [],
+      mediumSubjects: MEDIUM_ONLY,
+      strongSubjects: [],
+      neutralSubjects: [],
+      availableMinutesPerDay: 90,
+    });
+
+    expect(plan.days.some((d) => d.subjectCode === "general")).toBe(false);
+    const primaryCodes = new Set(plan.days.filter((d) => !d.title.includes("qo'shimcha")).map((d) => d.subjectCode));
+    expect(primaryCodes).toEqual(new Set(["MATH", "PHYSICS", "ENGLISH"]));
+  });
+
+  it("still favors the weak subject over a medium one", async () => {
+    const plan = await provider.generateLearningPlan({
+      grade: 8,
+      weakSubjects: [{ code: "CHEMISTRY", nameUz: "Kimyo", nameRu: "Химия" }],
+      mediumSubjects: [{ code: "MATH", nameUz: "Matematika", nameRu: "Математика" }],
+      strongSubjects: [],
+      neutralSubjects: [],
+      availableMinutesPerDay: 90,
+    });
+
+    const isPrimary = (d: { title: string }) => !d.title.includes("qo'shimcha");
+    const weakDays = plan.days.filter((d) => d.subjectCode === "CHEMISTRY" && isPrimary(d)).length;
+    const mediumDays = plan.days.filter((d) => d.subjectCode === "MATH" && isPrimary(d)).length;
+    expect(weakDays).toBeGreaterThan(mediumDays);
   });
 });
 

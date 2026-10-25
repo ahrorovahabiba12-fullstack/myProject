@@ -40,7 +40,7 @@ export default function Register() {
       navigate(session.user.role === "PARENT" ? "/parent" : "/dashboard");
     } catch (err) {
       const message = err instanceof AxiosError ? err.response?.data?.error?.message : null;
-      setError(message ?? "Ro'yxatdan o'tishda xatolik yuz berdi");
+      setError(message ?? t("auth.registerError"));
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export default function Register() {
               <Input
                 id="parentEmail"
                 type="email"
-                label="Ota-ona emaili (ixtiyoriy)"
+                label={t("auth.parentEmailOptional")}
                 value={parentEmail}
                 onChange={(e) => setParentEmail(e.target.value)}
               />

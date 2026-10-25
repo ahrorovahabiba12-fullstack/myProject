@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -12,6 +13,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const clearSession = useAuthStore((s) => s.clearSession);
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     if (!window.confirm(t("settings.confirmLogout"))) return;
@@ -21,6 +23,10 @@ export default function Settings() {
       // Logging out locally still succeeds even if the network call fails.
     }
     clearSession();
+    // Logout is an in-app navigation, not a reload — without this the next
+    // person to log in on this device would briefly see this user's cached
+    // profile, chat and progress before their own data arrives.
+    queryClient.clear();
     navigate("/login");
   };
 

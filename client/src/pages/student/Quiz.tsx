@@ -22,7 +22,7 @@ export default function Quiz() {
 
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[] | null>(null);
-  const [startedAt, setStartedAt] = useState<string | null>(null);
+  const [quizToken, setQuizToken] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -35,9 +35,9 @@ export default function Quiz() {
     setLoading(true);
     setError(null);
     try {
-      const { questions, startedAt } = await quizApi.start(id, profile.data.grade);
+      const { questions, quizToken } = await quizApi.start(id, profile.data.grade);
       setQuestions(questions);
-      setStartedAt(startedAt);
+      setQuizToken(quizToken);
       setSubjectId(id);
       setCurrent(0);
       setAnswers({});
@@ -70,12 +70,12 @@ export default function Quiz() {
   };
 
   const submit = async () => {
-    if (!questions || !subjectId || !profile.data) return;
+    if (!questions || !quizToken) return;
     setSubmitting(true);
     setError(null);
     try {
       const payload: Answer[] = questions.map((q) => ({ questionId: q.id, selectedIndex: answers[q.id] }));
-      const res = await quizApi.submit(subjectId, profile.data.grade, payload, startedAt ?? undefined);
+      const res = await quizApi.submit(quizToken, payload);
       setResult(res);
       // Quiz submission has side effects beyond the quiz itself: it may auto-complete
       // a matching Schedule item, change Progress/consistency/streak, unlock badges,

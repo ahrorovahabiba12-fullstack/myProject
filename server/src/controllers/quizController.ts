@@ -16,7 +16,7 @@ export const start = asyncHandler(async (req: Request, res: Response) => {
 export const submit = asyncHandler(async (req: Request, res: Response) => {
   const studentId = req.auth?.studentId;
   if (!studentId) throw AppError.forbidden("Faqat student test topshira oladi");
-  const { subjectId, grade, answers, startedAt } = req.body;
-  const result = await quizService.submitQuiz(studentId, subjectId, grade, answers, req.lang, startedAt);
+  const { quizToken, answers } = req.body;
+  const result = await quizService.submitQuiz(studentId, quizToken, answers, req.lang);
   res.status(200).json(result);
 });

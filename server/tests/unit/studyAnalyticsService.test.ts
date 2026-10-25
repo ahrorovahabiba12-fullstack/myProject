@@ -6,7 +6,7 @@ import { ConsistencyRepository } from "../../src/repositories/consistencyReposit
 import { SubjectRepository } from "../../src/repositories/subjectRepository";
 import { prisma } from "../../src/config/prisma";
 import { resetDb } from "../helpers/db";
-import { createStudentUser, createSubject } from "../helpers/fixtures";
+import { createStudentUser, createSubject, startOfDay } from "../helpers/fixtures";
 
 // gamification/consistencyService stay spies — this suite is specifically about
 // getStats() DELEGATING to those two services rather than recomputing streak/
@@ -119,6 +119,22 @@ describe("StudyAnalyticsService.getStats (real DB)", () => {
     expect(gamification.currentStreak).toHaveBeenCalledWith(student.id);
     expect(stats.consistencyScore).toBe(42);
     expect(stats.currentStreak).toBe(3);
+  });
+
+  it("labels each dailyTrend point with its own LOCAL date and includes real quiz minutes", async () => {
+    const { student } = await createStudentUser();
+    const math = await createSubject({ code: "MATH" });
+    const today = startOfDay();
+    await prisma.progress.create({ data: { studentId: student.id, date: today, studyMinutes: 0, completedTasks: 1 } });
+    await prisma.studySession.create({
+      data: { studentId: student.id, subjectId: math.id, startedAt: new Date(), completedAt: new Date(), minutes: 6, status: "COMPLETED", source: "QUIZ" },
+    });
+
+    const stats = await makeService().getStats(student.id, "uz");
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    expect(stats.dailyTrend).toEqual([{ date: todayKey, minutes: 6 }]);
   });
 });
 

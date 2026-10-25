@@ -11,7 +11,11 @@ export class ParentRepository {
     return this.db.parent.findUnique({ where: { userId } });
   }
 
+  // Case-insensitive, same as UserRepository.findByEmail.
   findByEmail(email: string) {
-    return this.db.parent.findFirst({ where: { user: { email } } });
+    return this.db.parent.findFirst({
+      where: { user: { email: { equals: email, mode: "insensitive" } } },
+      include: { user: { select: { fullName: true, email: true } } },
+    });
   }
 }

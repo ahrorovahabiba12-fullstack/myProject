@@ -60,6 +60,7 @@ export interface ParentReportOutput {
 export interface LearningPlanInput {
   grade: number;
   weakSubjects: { code: string; nameUz: string; nameRu: string }[];
+  mediumSubjects: { code: string; nameUz: string; nameRu: string }[];
   strongSubjects: { code: string; nameUz: string; nameRu: string }[];
   // Subjects the student hasn't been tested in yet (no weak/strong signal). Included so
   // the week isn't limited to only the 1-2 subjects that happen to have a quiz result —

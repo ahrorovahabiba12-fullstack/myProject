@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Send } from "lucide-react";
-import { chatApi } from "../../lib/api";
+import { chatApi, ChatHistory } from "../../lib/api";
 import { Button } from "../../components/ui/Button";
 import { Skeleton } from "../../components/ui/primitives";
 import { LogoIcon } from "../../components/icons/LogoIcon";
@@ -14,6 +14,7 @@ export default function AIChat() {
   const history = useQuery({ queryKey: ["chat-history"], queryFn: chatApi.getHistory });
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,16 +24,24 @@ export default function AIChat() {
   const send = async (text: string) => {
     if (!text.trim() || sending) return;
     setSending(true);
+    setSendError(false);
     setInput("");
     // Optimistic append so the UI feels instant while the request is in flight.
-    queryClient.setQueryData(["chat-history"], (old: any) => ({
-      ...old,
+    queryClient.setQueryData<ChatHistory>(["chat-history"], (old) => ({
+      conversationId: old?.conversationId ?? "",
       messages: [...(old?.messages ?? []), { id: `temp-${Date.now()}`, role: "USER", content: text }],
     }));
     try {
       await chatApi.sendMessage(text);
-      await queryClient.invalidateQueries({ queryKey: ["chat-history"] });
+    } catch {
+      // e.g. the chat rate limit (429) — say so and hand the text back for a
+      // retry, instead of leaving the optimistic bubble looking delivered.
+      setSendError(true);
+      setInput(text);
     } finally {
+      // Either way, the server's history is the truth (it may or may not have
+      // saved the message before failing).
+      await queryClient.invalidateQueries({ queryKey: ["chat-history"] });
       setSending(false);
     }
   };
@@ -89,6 +98,12 @@ export default function AIChat() {
             </button>
           ))}
         </div>
+      )}
+
+      {sendError && (
+        <p role="alert" className="text-sm text-danger mb-2">
+          {t("aiChat.sendError")}
+        </p>
       )}
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2">

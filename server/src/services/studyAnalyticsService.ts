@@ -15,6 +15,14 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+// Local calendar date as YYYY-MM-DD. Progress.date is stored as LOCAL midnight,
+// so toISOString() (UTC) labelled every day as the day before anywhere east of
+// UTC — in Tashkent (UTC+5) local midnight is 19:00 UTC of the previous date.
+function localDateKey(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export interface SubjectActivity {
   subjectId: string;
   subjectName: string;
@@ -94,9 +102,18 @@ export class StudyAnalyticsService {
       .map(([subjectId, v]) => ({ subjectId, subjectName: subjectNameById.get(subjectId) ?? subjectId, ...v }))
       .sort((a, b) => b.minutes - a.minutes);
 
-    const dailyTrend: DailyTrendPoint[] = progress
-      .slice(-TREND_DAYS)
-      .map((p) => ({ date: p.date.toISOString().slice(0, 10), minutes: p.studyMinutes }));
+    // Progress.studyMinutes is 0 for quiz-driven days by design — add the real
+    // quiz-session time back in, same as ProgressService.getOverview does.
+    const quizMinutesByDay = new Map<string, number>();
+    for (const s of completedSessions) {
+      if (s.source !== "QUIZ" || !s.completedAt) continue;
+      const key = localDateKey(s.completedAt);
+      quizMinutesByDay.set(key, (quizMinutesByDay.get(key) ?? 0) + s.minutes);
+    }
+    const dailyTrend: DailyTrendPoint[] = progress.slice(-TREND_DAYS).map((p) => {
+      const date = localDateKey(p.date);
+      return { date, minutes: p.studyMinutes + (quizMinutesByDay.get(date) ?? 0) };
+    });
 
     return {
       plannedTasks,

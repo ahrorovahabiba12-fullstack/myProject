@@ -3,8 +3,13 @@ import { PrismaClient, Role } from "@prisma/client";
 export class UserRepository {
   constructor(private db: PrismaClient) {}
 
+  // Case-insensitive: new emails are stored lowercased (see authValidators),
+  // but accounts created before that may still hold mixed-case ones.
   findByEmail(email: string) {
-    return this.db.user.findUnique({ where: { email }, include: { student: true, parent: true } });
+    return this.db.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      include: { student: true, parent: true },
+    });
   }
 
   findById(id: string) {

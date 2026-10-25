@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, CreditCard, LogOut } from "lucide-react";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -13,6 +14,7 @@ export default function ParentLayout() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     if (!window.confirm(t("settings.confirmLogout"))) return;
@@ -22,6 +24,7 @@ export default function ParentLayout() {
       /* local logout still proceeds */
     }
     clearSession();
+    queryClient.clear(); // see Settings.tsx — never leak cached data to the next user
     navigate("/login");
   };
 

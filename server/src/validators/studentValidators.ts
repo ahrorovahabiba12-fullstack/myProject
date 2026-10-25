@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { REGION_CODES } from "../constants/regions";
+import { emailField } from "./authValidators";
+
+export const linkParentSchema = z.object({
+  body: z.object({ parentEmail: emailField }),
+});
 
 export const updateProfileSchema = z.object({
   body: z.object({

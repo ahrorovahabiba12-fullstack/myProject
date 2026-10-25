@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "util";
 import { getAIProvider } from "../providers/ai";
 import { RecommendationRepository } from "../repositories/recommendationRepository";
 import { StudentRepository } from "../repositories/studentRepository";
@@ -38,6 +39,13 @@ export class RecommendationService {
     const items = output.items.slice(0, 7);
     const confidence = Math.min(1, Math.max(0, output.confidence));
 
+    // The dashboard calls this on every load — only store a new row when the
+    // recommendation actually changed, instead of one identical row per visit.
+    // (Deep-equal, not JSON string compare: jsonb doesn't keep key order.)
+    const latest = await this.recRepo.latestByType(studentId, "SUBJECT");
+    if (latest && latest.title === output.title && latest.confidence === confidence && isDeepStrictEqual(latest.payload, { items })) {
+      return { ...latest, items };
+    }
     const saved = await this.recRepo.save(studentId, "SUBJECT", output.title, { items }, confidence);
     return { ...saved, items };
   }

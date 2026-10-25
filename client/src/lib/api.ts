@@ -40,7 +40,11 @@ api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as RetryableRequestConfig | undefined;
-    if (error.response?.status === 401 && original && !original._retry) {
+    // A 401 from /auth/* (e.g. a wrong password on /auth/login) is the
+    // answer itself, not an expired session — refreshing and then redirecting
+    // to /login reloaded the page and wiped the error message off the form.
+    const isAuthRequest = original?.url?.startsWith("/auth/") ?? false;
+    if (error.response?.status === 401 && original && !original._retry && !isAuthRequest) {
       original._retry = true;
       refreshing = refreshing ?? refreshAccessToken();
       const refreshed = await refreshing;
@@ -48,6 +52,9 @@ api.interceptors.response.use(
       if (refreshed) {
         return api.request(original);
       }
+      // The session is really gone — drop the cached user too, or
+      // ProtectedRoute would keep letting this tab back into pages that 401.
+      localStorage.removeItem("user");
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -72,6 +79,7 @@ export interface StudentProfile {
   id: string;
   fullName: string;
   grade: number;
+  parent: { fullName: string; email: string } | null;
   region: string | null;
   interests: string[];
   favoriteSubjects: string[];
@@ -114,6 +122,8 @@ export const studentApi = {
   getDashboard: () => api.get<DashboardSummary>("/students/dashboard").then((r) => r.data),
   updateProfile: (data: Partial<Pick<StudentProfile, "interests" | "favoriteSubjects" | "goals" | "careerInterests" | "region">>) =>
     api.patch<StudentProfile>("/students/me", data).then((r) => r.data),
+  linkParent: (parentEmail: string) =>
+    api.put<{ parent: { fullName: string; email: string } }>("/students/me/parent", { parentEmail }).then((r) => r.data),
 };
 
 export const subjectApi = {
@@ -132,19 +142,26 @@ export interface QuizReviewItem {
 export const quizApi = {
   start: (subjectId: string, grade: number) =>
     api
-      .post<{ questions: { id: string; text: string; options: string[] }[]; startedAt: string }>("/quiz/start", { subjectId, grade })
+      .post<{ questions: { id: string; text: string; options: string[] }[]; quizToken: string }>("/quiz/start", { subjectId, grade })
       .then((r) => r.data),
-  submit: (subjectId: string, grade: number, answers: { questionId: string; selectedIndex: number }[], startedAt?: string) =>
+  // quizToken is start's opaque, server-signed record of this attempt — echoed
+  // back as-is; the server takes subject, grade and timing from it.
+  submit: (quizToken: string, answers: { questionId: string; selectedIndex: number }[]) =>
     api
       .post<{ score: number; level: string; correctCount: number; total: number; newBadges: string[]; review: QuizReviewItem[] }>(
         "/quiz/submit",
-        { subjectId, grade, answers, startedAt }
+        { quizToken, answers }
       )
       .then((r) => r.data),
 };
 
+export interface LearningRecommendation {
+  title: string;
+  items: { subjectCode: string; reason: string; minutesPerWeek: number; priority: number }[];
+}
+
 export const recommendationApi = {
-  getLearning: () => api.get("/recommendations/learning").then((r) => r.data),
+  getLearning: () => api.get<LearningRecommendation>("/recommendations/learning").then((r) => r.data),
 };
 
 export const careerApi = {
@@ -169,14 +186,31 @@ export const careerApi = {
   getCatalog: () => api.get<{ code: string; name: string }[]>("/career/catalog").then((r) => r.data),
 };
 
+export interface ChatHistory {
+  conversationId: string;
+  messages: { id: string; role: string; content: string }[];
+}
+
 export const chatApi = {
-  getHistory: () => api.get<{ conversationId: string; messages: { id: string; role: string; content: string }[] }>("/chat/history").then((r) => r.data),
+  getHistory: () => api.get<ChatHistory>("/chat/history").then((r) => r.data),
   sendMessage: (message: string) => api.post<{ conversationId: string; reply: string }>("/chat/message", { message }).then((r) => r.data),
 };
 
+export type ScheduleItem = {
+  id: string;
+  dayOfWeek: number;
+  title: string;
+  minutes: number;
+  actualMinutes: number;
+  actualSeconds: number;
+  status: "TODO" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
+  subject?: { name: string; code?: string } | null;
+  lastScore?: number | null;
+};
+
 export const scheduleApi = {
-  getCurrentWeek: () => api.get("/schedule/current").then((r) => r.data),
-  regenerate: () => api.post("/schedule/regenerate").then((r) => r.data),
+  getCurrentWeek: () => api.get<ScheduleItem[]>("/schedule/current").then((r) => r.data),
+  regenerate: () => api.post<ScheduleItem[]>("/schedule/regenerate").then((r) => r.data),
   updateStatus: (id: string, status: string) => api.patch(`/schedule/${id}/status`, { status }).then((r) => r.data),
 };
 

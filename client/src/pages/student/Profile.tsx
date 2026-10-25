@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, Lightbulb, Flag, Briefcase, BookOpen, MapPin } from "lucide-react";
-import { studentApi, careerApi, subjectApi } from "../../lib/api";
+import { AxiosError } from "axios";
+import { X, Lightbulb, Flag, Briefcase, BookOpen, MapPin, Users } from "lucide-react";
+import { studentApi, careerApi, subjectApi, StudentProfile } from "../../lib/api";
 import { Card, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { useTranslation } from "react-i18next";
@@ -145,6 +146,63 @@ function RegionPicker({ value, onChange }: { value: string | null; onChange: (v:
   );
 }
 
+// Linking is saved on its own (not via the page's Save button): it's a
+// separate account relationship, not a profile field, and it can fail on its
+// own terms (no parent account with that email yet).
+function ParentLink({ parent }: { parent: StudentProfile["parent"] }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
+  const link = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLinking(true);
+    setNotice(null);
+    try {
+      await studentApi.linkParent(email.trim());
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      setEmail("");
+      setNotice({ tone: "success", text: t("profile.parentLinkedSuccess") });
+    } catch (err) {
+      const notFound = err instanceof AxiosError && err.response?.status === 404;
+      setNotice({ tone: "error", text: notFound ? t("profile.parentNotFound") : t("profile.parentLinkError") });
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  return (
+    <div>
+      <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] mb-2">
+        <Users size={15} /> {t("profile.parentTitle")}
+      </label>
+      <p className="text-xs text-[var(--text-secondary)] mb-2">{t("profile.parentHint")}</p>
+      <p className="text-sm mb-2">
+        {parent ? t("profile.parentLinked", { name: parent.fullName, email: parent.email }) : t("profile.parentNotLinked")}
+      </p>
+      <form onSubmit={link} className="flex gap-2">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t("profile.parentEmailPlaceholder")}
+          className="input-field flex-1"
+          aria-label={t("profile.parentEmailPlaceholder")}
+        />
+        <Button type="submit" variant="secondary" loading={linking}>
+          {t("profile.parentLinkButton")}
+        </Button>
+      </form>
+      {notice && (
+        <p className={clsx("text-sm mt-2", notice.tone === "success" ? "text-emerald-600" : "text-danger")}>{notice.text}</p>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -252,6 +310,8 @@ export default function Profile() {
             labelFor={(code) => careerNameByCode.get(code) ?? code}
           />
         )}
+
+        <ParentLink parent={data?.parent ?? null} />
 
         {(dirty || saved) && (
           <div className="flex items-center gap-3">

@@ -1,3 +1,4 @@
+import { Badge, Prisma } from "@prisma/client";
 import { GamificationRepository } from "../repositories/gamificationRepository";
 import { prisma } from "../config/prisma";
 
@@ -13,18 +14,25 @@ export class GamificationService {
   // undefined). Also removed the redundant re-assignment in the old body.
   constructor(private repo = new GamificationRepository(prisma)) {}
 
-  /** Evaluates all badge rules after a quiz submission and grants any newly earned ones. */
-  async evaluateAfterQuiz(studentId: string): Promise<string[]> {
-    const granted: (string | null)[] = [];
+  /**
+   * Evaluates all badge rules after a quiz submission and grants any newly
+   * earned ones (returned as full Badge rows so the caller can show their
+   * localized names, never internal codes like "FIRST_QUIZ").
+   */
+  async evaluateAfterQuiz(studentId: string): Promise<Badge[]> {
+    const granted: (Badge | null)[] = [];
     const quizCount = await this.repo.countQuizResults(studentId);
 
-    if (quizCount === 1) granted.push(await this.tryGrant(studentId, "FIRST_QUIZ"));
-    if (quizCount === 10) granted.push(await this.tryGrant(studentId, "TEN_QUIZZES"));
+    // ">=" rather than "===": tryGrant is idempotent, and an exact match missed
+    // the badge for good whenever the count stepped past the threshold without
+    // landing on it (two submits racing 9 -> 11, or a grant that failed once).
+    if (quizCount >= 1) granted.push(await this.tryGrant(studentId, "FIRST_QUIZ"));
+    if (quizCount >= 10) granted.push(await this.tryGrant(studentId, "TEN_QUIZZES"));
 
     const streak = await this.currentStreak(studentId);
-    if (streak === 7) granted.push(await this.tryGrant(studentId, "SEVEN_DAY_STREAK"));
+    if (streak >= 7) granted.push(await this.tryGrant(studentId, "SEVEN_DAY_STREAK"));
 
-    return granted.filter((g): g is string => Boolean(g));
+    return granted.filter((g): g is Badge => g !== null);
   }
 
   async currentStreak(studentId: string): Promise<number> {
@@ -40,13 +48,20 @@ export class GamificationService {
     return streak;
   }
 
-  private async tryGrant(studentId: string, badgeCode: string): Promise<string | null> {
+  private async tryGrant(studentId: string, badgeCode: string): Promise<Badge | null> {
     const badge = await this.repo.findBadgeByCode(badgeCode);
     if (!badge) return null;
     const existing = await this.repo.hasAchievement(studentId, badge.id);
     if (existing) return null;
-    await this.repo.grantAchievement(studentId, badge.id);
-    return badgeCode;
+    try {
+      await this.repo.grantAchievement(studentId, badge.id);
+    } catch (err) {
+      // A concurrent submit granted it between the check above and this
+      // insert (@@unique([studentId, badgeId])) — already earned, not an error.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return null;
+      throw err;
+    }
+    return badge;
   }
 
   listAchievements(studentId: string) {

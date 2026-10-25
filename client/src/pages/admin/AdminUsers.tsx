@@ -38,7 +38,13 @@ export default function AdminUsers() {
     return (users.data ?? []).filter((u) => {
       if (roleFilter && u.role !== roleFilter) return false;
       if (!q) return true;
-      return u.fullName.toLowerCase().includes(q) || (u.phone ?? "").toLowerCase().includes(q);
+      // Email included: phone is optional and usually empty, so name+phone alone
+      // couldn't find most accounts by the one identifier every user has.
+      return (
+        u.fullName.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.phone ?? "").toLowerCase().includes(q)
+      );
     });
   }, [users.data, roleFilter, search]);
 

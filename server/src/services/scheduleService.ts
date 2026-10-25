@@ -18,6 +18,14 @@ function mondayOf(date: Date): Date {
   return d;
 }
 
+const PLAN_MINUTES_PER_DAY = 90;
+
+// Schedule.dayOfWeek convention: 1 (Monday) .. 7 (Sunday).
+function todayIsoDay(): number {
+  const jsDay = new Date().getDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+
 export class ScheduleService {
   constructor(
     private ai = getAIProvider(),
@@ -60,9 +68,7 @@ export class ScheduleService {
   // never finished that day. Runs on every getCurrentWeek read so this
   // resolves itself the next time the student opens the page, no cron needed.
   private async skipPastDueItems(studentId: string, weekStart: Date) {
-    const jsDay = new Date().getDay();
-    const todayIsoDay = jsDay === 0 ? 7 : jsDay;
-    const pastDue = await this.repo.findPastDueOpenItems(studentId, weekStart, todayIsoDay);
+    const pastDue = await this.repo.findPastDueOpenItems(studentId, weekStart, todayIsoDay());
     if (pastDue.length === 0) return;
 
     const inProgressIds = pastDue.filter((i) => i.status === "IN_PROGRESS").map((i) => i.id);
@@ -72,7 +78,12 @@ export class ScheduleService {
     await this.repo.skipItems(pastDue.map((i) => i.id));
   }
 
-  async generateWeek(studentId: string, lang: Lang, weekStart = mondayOf(new Date())) {
+  async generateWeek(studentId: string, lang: Lang) {
+    const weekStart = mondayOf(new Date());
+    // Same as getCurrentWeek: an unfinished item from a day that's already
+    // gone is recorded as SKIPPED first — otherwise deleteTodoItems below
+    // would erase it as if it had never been planned at all.
+    await this.skipPastDueItems(studentId, weekStart);
     return this.localizeWeek(await this.generateWeekRaw(studentId, weekStart), lang);
   }
 
@@ -82,11 +93,27 @@ export class ScheduleService {
   // state lost) just because the student toggles the UI language. localizeWeek()
   // picks the right stored language at read time instead.
   private async generateWeekRaw(studentId: string, weekStart: Date) {
+    // Only today and the days still ahead can be planned. An item written for
+    // a day that's already gone can never be started (the Play button only
+    // appears on today's card), so the next getCurrentWeek read flipped it
+    // straight to SKIPPED: a student joining on a Thursday saw Mon-Wed as
+    // "missed", and every mid-week "Qayta yaratish" piled more SKIPPED rows
+    // onto past days, dragging completionRate down for tasks they never had
+    // a chance to do. On Sunday (a rest day) nothing is left this week.
+    const firstPlannableDay = todayIsoDay();
+    if (firstPlannableDay > 6) return this.repo.findByWeek(studentId, weekStart);
+
     const student = await this.studentRepo.findById(studentId);
     if (!student) throw AppError.notFound("Student topilmadi");
 
     const weak = student.subjectLevels
       .filter((s) => s.level === "WEAK")
+      .map((s) => ({ code: s.subject.code, nameUz: s.subject.nameUz, nameRu: s.subject.nameRu }));
+    // MEDIUM (50-79%) is the most common level a student has — leaving it out
+    // meant a student whose subjects were all MEDIUM got a week of subject-less
+    // "Umumiy takrorlash" days with nothing for the Play button to open.
+    const medium = student.subjectLevels
+      .filter((s) => s.level === "MEDIUM")
       .map((s) => ({ code: s.subject.code, nameUz: s.subject.nameUz, nameRu: s.subject.nameRu }));
     const strong = student.subjectLevels
       .filter((s) => s.level === "STRONG")
@@ -103,9 +130,10 @@ export class ScheduleService {
     const plan = await this.ai.generateLearningPlan({
       grade: student.grade,
       weakSubjects: weak,
+      mediumSubjects: medium,
       strongSubjects: strong,
       neutralSubjects: neutral,
-      availableMinutesPerDay: 90,
+      availableMinutesPerDay: PLAN_MINUTES_PER_DAY,
     });
 
     const subjectIdByCode = new Map(allSubjects.map((s) => [s.code, s.id]));
@@ -119,12 +147,16 @@ export class ScheduleService {
     await this.repo.createMany(
       studentId,
       weekStart,
-      plan.days.map((d) => ({
+      plan.days.filter((d) => d.dayOfWeek >= firstPlannableDay).map((d) => ({
         dayOfWeek: d.dayOfWeek,
         title: d.title,
         titleRu: d.titleRu,
         subjectCode: d.subjectCode,
-        minutes: d.minutes,
+        // Business-rule clamp before the DB, like every other AI output:
+        // Schedule.minutes is an Int, so a model's "12.5" made createMany
+        // throw (a 500 the provider fallback never sees, since it happens
+        // after the provider call), and 0/negative/huge values are nonsense.
+        minutes: Math.min(PLAN_MINUTES_PER_DAY, Math.max(1, Math.round(d.minutes))),
       })),
       subjectIdByCode
     );
@@ -137,7 +169,11 @@ export class ScheduleService {
     if (!item) throw AppError.notFound("Reja topilmadi");
     if (item.status === status) return { success: true };
 
-    await this.repo.updateStatus(scheduleId, studentId, status);
+    // Only the request that actually moves the item out of the status read
+    // above may run the side effects below — a concurrent duplicate (double
+    // click, retry) used to pass the same read and credit Progress twice.
+    const { count } = await this.repo.updateStatusIfCurrent(scheduleId, studentId, item.status, status);
+    if (count === 0) return { success: true };
 
     // StudySession side-effect — records the real start/end of this attempt at the task.
     // Kept independent of the Progress crediting below: Progress still credits the

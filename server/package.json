@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed-if-empty": "tsx scripts/seedIfEmpty.ts",
     "db:reset": "prisma migrate reset --force",
     "create-superadmin": "tsx scripts/createSuperAdmin.ts",
     "test": "vitest run",

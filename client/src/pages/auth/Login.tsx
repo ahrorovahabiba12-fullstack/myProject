@@ -30,7 +30,7 @@ export default function Login() {
       else navigate("/dashboard");
     } catch (err) {
       const message = err instanceof AxiosError ? err.response?.data?.error?.message : null;
-      setError(message ?? "Email yoki parol noto'g'ri");
+      setError(message ?? t("auth.loginError"));
     } finally {
       setLoading(false);
     }

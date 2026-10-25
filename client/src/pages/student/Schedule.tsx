@@ -3,22 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Check, RefreshCw, Loader2, Circle, PlayCircle, X } from "lucide-react";
 import { useState } from "react";
-import { scheduleApi } from "../../lib/api";
+import { scheduleApi, ScheduleItem } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import clsx from "clsx";
-
-type ScheduleItem = {
-  id: string;
-  dayOfWeek: number;
-  title: string;
-  minutes: number;
-  actualMinutes: number;
-  actualSeconds: number;
-  status: "TODO" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
-  subject?: { name: string; code?: string } | null;
-  lastScore?: number | null;
-};
 
 function formatCompletedDuration(
   actualSeconds: number,
@@ -170,7 +158,13 @@ export default function Schedule() {
       ) : isError ? (
         <ErrorState message={t("schedule.errorLoad")} onRetry={() => refetch()} />
       ) : (data ?? []).length === 0 ? (
-        <EmptyState icon="📅" title={t("schedule.emptyTitle")} description={t("schedule.emptyDesc")} />
+        // Plans only cover today onward (Mon-Sat), so on Sunday an empty week is
+        // expected — "press the button above" would be a dead end there.
+        todayIso === 7 ? (
+          <EmptyState icon="🌿" title={t("schedule.sundayEmptyTitle")} description={t("schedule.sundayEmptyDesc")} />
+        ) : (
+          <EmptyState icon="📅" title={t("schedule.emptyTitle")} description={t("schedule.emptyDesc")} />
+        )
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Monday(1)..Saturday(6) only — the weekly plan excludes Sunday(7). */}

@@ -237,7 +237,7 @@ export class RuleBasedProvider implements AIProvider {
     // twice as often across the week, not just for longer sessions when their turn
     // happens to land — a student weak in one subject should see it noticeably more
     // often, not merely get a longer block on whichever day it's already scheduled.
-    const testedPool = [...input.weakSubjects, ...input.weakSubjects, ...input.strongSubjects];
+    const testedPool = [...input.weakSubjects, ...input.weakSubjects, ...input.mediumSubjects, ...input.strongSubjects];
     // A brand-new student has no quiz results yet, so weakSubjects/strongSubjects are
     // both empty — falling back to a vague "general review" would imply history that
     // doesn't exist. Rotate through real, untested subjects instead; "general review"
@@ -248,7 +248,8 @@ export class RuleBasedProvider implements AIProvider {
     // A second, lighter block per day brings in subjects beyond the tested weak/strong
     // set — neutral, everyday-useful subjects the student hasn't necessarily tested —
     // so a week isn't limited to only the 1-2 subjects that happen to have a quiz result.
-    const secondaryPool = input.neutralSubjects.length > 0 ? input.neutralSubjects : input.strongSubjects;
+    const secondaryPool =
+      input.neutralSubjects.length > 0 ? input.neutralSubjects : [...input.mediumSubjects, ...input.strongSubjects];
 
     // Monday(1)..Saturday(6) only — the weekly plan deliberately excludes Sunday(7),
     // a rest day with no scheduled study.

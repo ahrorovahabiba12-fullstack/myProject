@@ -40,7 +40,10 @@
     "haveAccount": "Akkountingiz bormi?",
     "noAccount": "Akkountingiz yo'qmi?",
     "switchToLogin": "Kirish",
-    "switchToRegister": "Ro'yxatdan o'tish"
+    "switchToRegister": "Ro'yxatdan o'tish",
+    "parentEmailOptional": "Ota-ona emaili (ixtiyoriy)",
+    "loginError": "Email yoki parol noto'g'ri",
+    "registerError": "Ro'yxatdan o'tishda xatolik yuz berdi"
   },
   "dashboard": {
     "greeting": "Salom, {{name}}! 👋",
@@ -84,7 +87,11 @@
       "Har bir savol — yangi bilim sari eshik.",
       "Sen qila olasan — faqat boshlash kerak.",
       "Doimiylik — iste'doddan ko'ra muhimroq."
-    ]
+    ],
+    "noTasksTitle": "Bugun uchun reja mavjud emas",
+    "noTasksDesc": "Profilingizni to'ldiring yoki haftalik rejani AI orqali yarating.",
+    "noRecommendation": "Hozircha tavsiya mavjud emas. Profilingizni to'ldiring.",
+    "discussWithAI": "AI bilan muhokama qilish →"
   },
   "nav_sidebar": {
     "dashboard": "Bosh sahifa",
@@ -104,7 +111,8 @@
     "language": "Til",
     "appearance": "Ko'rinish",
     "logout": "Chiqish",
-    "confirmLogout": "Rostdan ham tizimdan chiqmoqchimisiz?"
+    "confirmLogout": "Rostdan ham tizimdan chiqmoqchimisiz?",
+    "toggleTheme": "Mavzuni almashtirish"
   },
   "topbar": {
     "streak": "kunlik seriya",
@@ -127,7 +135,8 @@
     "sendLabel": "Yuborish",
     "suggestion1": "Qaysi mavzuni o'rganishim kerak?",
     "suggestion2": "Menga o'quv reja tuzib ber",
-    "suggestion3": "Kasb tanlashda yordam ber"
+    "suggestion3": "Kasb tanlashda yordam ber",
+    "sendError": "Xabar yuborilmadi. Qaytadan urinib ko'ring."
   },
   "quiz": {
     "title": "Testlar",
@@ -165,6 +174,8 @@
     "errorLoad": "Rejani yuklab bo'lmadi.",
     "emptyTitle": "Hozircha reja mavjud emas",
     "emptyDesc": "AI orqali shaxsiy haftalik reja yaratish uchun yuqoridagi tugmani bosing.",
+    "sundayEmptyTitle": "Bugun dam olish kuni",
+    "sundayEmptyDesc": "Yangi haftalik reja dushanba kuni tuziladi. Xohlasangiz, \"Testlar\" bo'limida istalgan fandan mashq qilishingiz mumkin.",
     "minutes": "daqiqa",
     "durationCompleted": "{{minutes}} daqiqa {{seconds}} soniya",
     "durationSecondsOnly": "{{seconds}} soniya",
@@ -248,7 +259,16 @@
     "save": "Saqlash",
     "grade": "sinf",
     "saved": "Saqlandi ✓",
-    "remove": "olib tashlash"
+    "remove": "olib tashlash",
+    "parentTitle": "Ota-ona",
+    "parentHint": "Ota-onangiz o'z hisobida natijalaringizni ko'rishi uchun uning emailini kiriting.",
+    "parentLinked": "Bog'langan: {{name}} ({{email}})",
+    "parentNotLinked": "Hali ota-ona bog'lanmagan.",
+    "parentEmailPlaceholder": "ota-ona emaili",
+    "parentLinkButton": "Bog'lash",
+    "parentLinkedSuccess": "Ota-ona bog'landi ✓",
+    "parentNotFound": "Bu email bilan ota-ona hisobi topilmadi. Avval ota-onangiz ro'yxatdan o'tishi kerak.",
+    "parentLinkError": "Bog'lab bo'lmadi. Qaytadan urinib ko'ring."
   },
   "parent": {
     "headerTitle": "AI Advisor — Ota-ona paneli",
@@ -256,7 +276,7 @@
     "logout": "Chiqish",
     "welcome": "Xush kelibsiz",
     "noChildTitle": "Hali farzand bog'lanmagan",
-    "noChildDesc": "Farzandingiz ro'yxatdan o'tishda sizning emailingizni kiritishi kerak.",
+    "noChildDesc": "Farzandingiz o'z Profil sahifasida (yoki ro'yxatdan o'tishda) sizning emailingizni kiritishi kerak.",
     "progressTitle": "Farzandingizning rivojlanishi",
     "weeklyStudy": "Haftalik shug'ullanish",
     "minutes": "daq",
@@ -356,7 +376,7 @@
     "statusInactive": "Nofaol",
     "questionsBySubjectHint": "Fanlar bo'yicha savollar taqsimoti",
     "usersTitle": "Foydalanuvchilar",
-    "searchPlaceholder": "Ism yoki telefon bo'yicha qidirish",
+    "searchPlaceholder": "Ism, email yoki telefon bo'yicha qidirish",
     "colPhone": "Telefon",
     "colRole": "Rol",
     "colAction": "Amal",

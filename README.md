@@ -5,7 +5,7 @@ progress tahlili, AI chat, va (9-11 sinf uchun) kasb/universitet tavsiyalari.
 Ota-onalar uchun alohida analitika paneli.
 
 > **Loyiha holati**: to'liq kod bazasi ishga tushirilgan, haqiqiy PostgreSQL
-> bazasi ustida sinovdan o'tkazilgan va real brauzerda tekshirilgan — **172
+> bazasi ustida sinovdan o'tkazilgan va real brauzerda tekshirilgan — **204
 > test o'tadi** (`npm test`). Batafsil holat, bilingan kamchiliklar va demo
 > akkountlar: `PROJECT_STATUS.md`.
 
@@ -80,7 +80,7 @@ Route → Controller → Service → Repository → Prisma → PostgreSQL
     schema.prisma
     seed.ts
   /tests
-    /unit                   — grade-gate, ownership, quiz-scoring — real DB, 172 ta test o'tadi
+    /unit                   — grade-gate, ownership, quiz-scoring — real DB, 204 ta test o'tadi
     /integration            — end-to-end API testlar (haqiqiy DB talab qiladi)
 ```
 
@@ -109,9 +109,13 @@ npm --prefix client install
 
 ### 4. Database
 ```bash
-npm run prisma:migrate         # birinchi migration yaratadi
-npm run prisma:seed            # demo ma'lumotlar
+npm run prisma:migrate         # migratsiyalarni qo'llaydi (yangi kod olingandan keyin ham ishga tushiring)
+npm run prisma:seed            # demo ma'lumotlar (faqat bo'sh bazada — pastdagi eslatmaga qarang)
 ```
+
+> Seed savollarni o'chirib qayta yaratadi, shuning uchun uni o'quvchilar
+> ishlatayotgan bazada qayta ishga tushirmang — o'quvchilarning savollar
+> bo'yicha tarixi (`QuestionAttempt`) o'chib ketadi.
 
 ### 5. Ishga tushirish
 ```bash
@@ -122,6 +126,9 @@ npm run dev                    # frontend (5173) + backend (4000) parallel
 ```bash
 docker compose up --build
 ```
+Backend konteyneri ishga tushganda migratsiyalarni avtomatik qo'llaydi va
+baza **bo'sh bo'lsa** demo ma'lumotlarni seed qiladi (mavjud bazaga tegmaydi).
+Server vaqt zonasi `Asia/Tashkent` (`TZ` orqali o'zgartirish mumkin).
 
 ## Demo akkountlar
 
@@ -145,7 +152,7 @@ yangi o'quvchi ro'yxatdan o'tkazib ko'ring.
 
 ## Testlash
 
-**172 test o'tadi** (`npm test`). Barcha testlar (unit + integration) haqiqiy
+**204 test o'tadi** (`npm test`). Barcha testlar (unit + integration) haqiqiy
 PostgreSQL bazasiga ulanadi — bitta
 marta alohida test bazasini yaratish va migratsiya qilish kerak (asosiy dev
 bazangizga umuman tegmaydi, har bir test faylidan oldin to'liq tozalanadi):

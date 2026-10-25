@@ -33,6 +33,17 @@ export class StudentRepository {
     return this.db.student.findUnique({ where: { id }, select: { grade: true } });
   }
 
+  findLinkedParent(id: string) {
+    return this.db.student.findUnique({
+      where: { id },
+      select: { parent: { select: { user: { select: { fullName: true, email: true } } } } },
+    });
+  }
+
+  setParent(id: string, parentId: string) {
+    return this.db.student.update({ where: { id }, data: { parentId } });
+  }
+
   updateProfile(
     id: string,
     data: Partial<{ interests: string[]; favoriteSubjects: string[]; goals: string[]; careerInterests: string[]; region: string | null }>

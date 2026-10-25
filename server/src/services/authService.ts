@@ -35,9 +35,14 @@ export class AuthService {
         return { user, parent, student: null };
       }
 
+      // Best-effort at sign-up: no parent account with that email yet (or a
+      // typo) must not block registration — the student can link one later
+      // from their Profile (StudentService.linkParent).
       let parentId: string | undefined;
       if (input.parentEmail) {
-        const parentRecord = await tx.parent.findFirst({ where: { user: { email: input.parentEmail } } });
+        const parentRecord = await tx.parent.findFirst({
+          where: { user: { email: { equals: input.parentEmail, mode: "insensitive" } } },
+        });
         parentId = parentRecord?.id;
       }
       const student = await tx.student.create({

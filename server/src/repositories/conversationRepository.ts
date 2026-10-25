@@ -20,12 +20,17 @@ export class ConversationRepository {
     return this.db.aIConversation.findFirst({ where: { id, studentId } });
   }
 
-  listMessages(conversationId: string, limit = 50) {
-    return this.db.aIMessage.findMany({
+  // The LATEST `limit` messages, returned oldest-first for display/AI context.
+  // Taking the first `limit` in ascending order instead froze the window on the
+  // conversation's opening messages — past 50, every new message and reply was
+  // saved but never shown again, and the AI only ever saw the oldest turns.
+  async listMessages(conversationId: string, limit = 50) {
+    const latest = await this.db.aIMessage.findMany({
       where: { conversationId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: limit,
     });
+    return latest.reverse();
   }
 
   addMessage(conversationId: string, role: AIMessageRole, content: string) {

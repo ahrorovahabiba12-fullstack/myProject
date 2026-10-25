@@ -36,6 +36,12 @@ export class ScheduleRepository {
     return this.db.schedule.findFirst({ where: { id, studentId } });
   }
 
+  // Compare-and-set: only moves the item if it is still in `from` — the
+  // returned count is 0 when a concurrent request already changed it.
+  updateStatusIfCurrent(id: string, studentId: string, from: ScheduleStatus, to: ScheduleStatus) {
+    return this.db.schedule.updateMany({ where: { id, studentId, status: from }, data: { status: to } });
+  }
+
   updateStatus(id: string, studentId: string, status: ScheduleStatus, lastScore?: number) {
     // studentId filter enforces ownership at the query level, not just in the controller.
     return this.db.schedule.updateMany({

@@ -25,7 +25,8 @@ function fail(message: string): never {
 }
 
 async function main() {
-  const email = process.env.SUPERADMIN_EMAIL;
+  // Lowercased like every other account's email (see authValidators.emailField).
+  const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.SUPERADMIN_PASSWORD;
   const fullName = process.env.SUPERADMIN_NAME?.trim() || "Super Admin";
 
@@ -40,7 +41,7 @@ async function main() {
     fail(`SUPERADMIN_PASSWORD kamida ${MIN_PASSWORD_LENGTH} belgidan iborat bo'lishi kerak.`);
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (existing) {
     if (existing.role !== Role.ADMIN) {
       fail(

@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — AI Career & Learning Advisor
 
-_Last updated: 2026-10-08. Reflects the actual, runtime-verified state of the
+_Last updated: 2026-10-25. Reflects the actual, runtime-verified state of the
 app — built, run, and tested against a real PostgreSQL database and a real
 browser, repeatedly. The project is live: `npm install && npm run dev` boots
 both client (5173) and server (4000), and `npm test` runs a real suite
@@ -13,7 +13,7 @@ against `ai_advisor_test`._
 - **Frontend**: every student/parent/admin page listed below exists, is
   routed, and has been exercised in a real browser (login → feature → real
   API response → rendered UI).
-- **Tests**: `npm --prefix server test` → **172 passing**, 0 failing. All
+- **Tests**: `npm --prefix server test` → **204 passing**, 0 failing. All
   real-DB (Postgres), no repository-layer mocking; only genuinely external
   boundaries (AI provider, payment provider) are spied.
 - **Git**: single clean commit history on `origin/ai-advisor` (GitHub,
@@ -28,18 +28,26 @@ against `ai_advisor_test`._
 refresh tokens are hashed before storage and rotate on every use; a
 `BLOCKED` user is rejected on both login and refresh. Dedicated rate limit
 on `/auth/login` and `/auth/register` (10/15min/IP) on top of the global
-limiter. Registration grade range is **4–11** (`Register.tsx`'s own select,
-matches `MIN_CAREER_GRADE` downstream).
+limiter. Registration grade range is **4–11**, enforced by the server's own
+validator too (not just `Register.tsx`'s select). Emails are **stored
+lowercased and looked up case-insensitively** (legacy mixed-case rows still
+log in) — one inbox can no longer hold two accounts. Every refresh token
+carries a random `jti`, so two sessions opened in the same second never sign
+identical tokens (logging one out used to leave a valid twin behind).
 
 **Quiz** — 8 subjects × grades **4–11**, all with real, grade-appropriate
 questions (not placeholders) in Uzbek + Russian. `correctIndex` never sent
 to the client; scoring is always server-recomputed from the DB answer key.
-`submitQuiz`/`startQuiz` reject a request whose `grade` doesn't match the
-student's own profile grade, and `submitQuiz` rejects answers whose
-questions don't genuinely belong to the claimed `subjectId`/`grade` —
-closes a request-tampering path into `QuizResult`/`SubjectLevel`.
-Adaptive question selection weights a student's own recent wrong/right
-history per question.
+`startQuiz` rejects a `grade` that doesn't match the student's own profile
+grade and returns a **signed `quizToken`** (student, subject, grade, the exact
+served question ids, start time). `submitQuiz` takes subject/grade/timing
+from that token only, requires answers for **exactly** the served questions
+(no answering just the one you know for a free 100%), and each token scores
+**once** (`QuizResult.attemptId @unique` — the post-submit review can't be
+used to resubmit with corrected answers). Credited study time is capped at
+30 min per attempt. Badge grants are best-effort (a failure never 500s an
+already-saved result) and are reported by localized name. Adaptive question
+selection weights a student's own recent wrong/right history per question.
 
 **Schedule** — AI-generated weekly plan, **Monday–Saturday only** (no
 Sunday). Both `title` and `titleRu` are generated together and stored side
@@ -51,7 +59,13 @@ auto-marked **SKIPPED** the next time the student opens the page (closes a
 real "stuck forever in Davom etmoqda" bug). The Play button only appears on
 **today's** card. Planned `minutes` are realistic for how a 5-question quiz
 actually completes a block (10–15 min primary, 5 min secondary), not an
-inflated full-hour estimate.
+inflated full-hour estimate, and are clamped to a whole 1–90 before saving
+whatever the AI returns. A plan only ever covers **today onward** — a
+student joining mid-week no longer sees earlier days instantly "SKIPPED",
+regenerating never adds items to past days (a past unfinished item is
+recorded as SKIPPED once, not deleted), and on Sunday (rest day) nothing is
+generated. **MEDIUM**-level subjects are planned too (previously dropped —
+an all-MEDIUM student got a week of subject-less "Umumiy takrorlash").
 
 **Career/University** — gated at `grade >= 9` (`MIN_CAREER_GRADE`), enforced
 independently in the sidebar nav, the page itself, and the service layer
@@ -61,7 +75,10 @@ returns** — a stale/mismatched-language entry can no longer linger
 alongside fresh ones.
 
 **AI Chat** — full student context passed to the provider; conversation
-scoped by `studentId`.
+scoped by `studentId`. History (UI and AI context) is the **latest** 50
+messages — it used to be the first 50, so past 50 every new message vanished
+on reload. A failed send (e.g. the chat rate limit) is shown and the text is
+handed back for a retry. OpenAI calls time out after 20s and fall back.
 
 **Progress page** — consistency score, study-stats card (completion rate,
 actual-vs-planned rate, session count, per-subject breakdown), weekly
@@ -77,7 +94,10 @@ TEN_QUIZZES), idempotent grants.
 
 **Parent module** — `ParentLayout`/`ParentDashboard`/`Subscription` pages
 exist and are routed. `ParentService.assertOwnership` re-checked on every
-method — a parent can never read another family's child via ID.
+method — a parent can never read another family's child via ID. A student
+links a parent either at sign-up or later from **Profile** (`PUT
+/api/students/me/parent`) — before, sign-up was the only chance, so a parent
+who registered after their child could never be linked.
 
 **Notifications** — `NotificationPanel` UI exists and is wired to the real
 unread-count/list/mark-read endpoints.
@@ -89,6 +109,16 @@ unread-count/list/mark-read endpoints.
 **Admin** — `AdminDashboard`/`AdminUsers`, stats, user status management.
 
 **i18n** — uz (default)/ru, parallel key sets, no hardcoded UI strings.
+
+**Client session** — a 401 from `/auth/*` (e.g. a wrong password) is shown
+as-is instead of triggering refresh + a page reload that wiped the error;
+logout clears the React Query cache so the next user on the same device
+never sees the previous user's cached data.
+
+**Docker** — the backend image runs in `Asia/Tashkent` (all day-boundary
+logic is server-local) and seeds a brand-new, empty database on start
+(`npm run prisma:seed-if-empty`) so `docker compose up` comes up with the
+demo accounts; an existing database is never re-seeded.
 
 **Branding** — logo mark is a growth-trend icon (`components/icons/LogoIcon.tsx`),
 used consistently across sidebar/auth/chat/landing/parent header.
@@ -115,13 +145,12 @@ used consistently across sidebar/auth/chat/landing/parent header.
 
 ## Known gaps (real, deferred — not urgent)
 
-- `ScheduleService.markStatus` has a read-then-write race (two concurrent
-  requests could both see the pre-update status and double-credit
-  Progress). Currently **no frontend code calls this endpoint** (status
-  changes happen automatically via quiz completion), so it's a real gap in
-  an otherwise-unused code path, not an active bug. Fix: wrap the read +
-  status update + Progress credit in a transaction, or use the `updateMany`
-  result count to detect a lost race.
+- Re-running `npm run prisma:seed` by hand on a live database rewrites every
+  hand-written question set, and `QuestionAttempt` rows cascade-delete with
+  their `Question` — so it wipes students' adaptive-quiz history (and
+  invalidates any quiz in progress). Docker only seeds an empty database for
+  this reason. Fix if content updates on live data are needed: upsert
+  questions by a stable key instead of delete + recreate.
 - `SubscriptionService.confirmUpgrade` doesn't verify that `reference`
   actually belongs to a checkout this parent issued — harmless today since
   `MockPaymentProvider.confirmPayment` always returns `true` regardless of
@@ -132,8 +161,7 @@ used consistently across sidebar/auth/chat/landing/parent header.
 - **AI Memory UI, Skill Map UI, ParentWeeklyDigest** — schema models exist
   (`StudentGoal`/`Skill`/`StudentSkill`, `ParentWeeklyDigest`), no
   service/routes/UI built yet.
-- `QuizRepository.saveResult`/`upsertSubjectLevel` and
-  `GamificationRepository.upsertTodayProgress` are dead code —
+- `QuizRepository.saveResult`/`upsertSubjectLevel` are dead code —
   `QuizService.submitQuiz` does its own inline `prisma.$transaction`
   instead of going through the repository layer for that multi-table
   write. Works correctly as-is; a style/architecture-consistency gap, not a
@@ -158,8 +186,9 @@ student (grade selector offers 4–11) to see that path.
 ## Next steps (if resuming feature work)
 
 In rough priority order, picking up from the "Known gaps" above:
-1. `markStatus` race condition fix (only if/when a UI path starts calling it).
-2. Mock payment reference-ownership check (only needed before a real
+1. Mock payment reference-ownership check (only needed before a real
    payment provider is wired in).
-3. Production Dockerfile for the client (build + static serve).
+2. Production Dockerfile for the client (build + static serve).
+3. Non-destructive question re-seeding (upsert, so `QuestionAttempt`
+   history survives content updates).
 4. AI Memory / Skill Map UI, if those features are still wanted.

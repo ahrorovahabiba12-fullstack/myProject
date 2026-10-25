@@ -254,6 +254,12 @@ model QuizResult {
   score       Float
   level       SubjectLevelEnum
   attemptDate DateTime
+  // The signed startQuiz attempt (quiz token jti) this result was scored from.
+  // Unique, so one served quiz can only ever be submitted once — otherwise the
+  // post-submit review (which reveals correctIndex) let a student resubmit the
+  // same questions with corrected answers for a free 100%. Null on rows that
+  // predate quiz tokens.
+  attemptId   String?          @unique
   createdAt   DateTime         @default(now())
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)

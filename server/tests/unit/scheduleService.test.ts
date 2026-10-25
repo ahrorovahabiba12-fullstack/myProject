@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from "vitest";
 import { ScheduleService } from "../../src/services/scheduleService";
+import { ScheduleRepository } from "../../src/repositories/scheduleRepository";
 import { prisma } from "../../src/config/prisma";
 import { resetDb } from "../helpers/db";
 import { createStudentUser, createSubject, startOfDay } from "../helpers/fixtures";
@@ -106,6 +107,36 @@ describe("ScheduleService — markStatus (real DB)", () => {
       });
 
       await expect(new ScheduleService().markStatus(attacker.id, schedule.id, "COMPLETED")).rejects.toMatchObject({ statusCode: 404 });
+    });
+
+    it("credits Progress only once when the same transition arrives twice concurrently (read-then-write race)", async () => {
+      const { student } = await createStudentUser();
+      const subject = await createSubject();
+      const schedule = await prisma.schedule.create({
+        data: { studentId: student.id, weekStart, dayOfWeek: todayIso, title: "t", subjectId: subject.id, minutes: 45, status: "TODO", source: "ai" },
+      });
+      // Force the worst-case interleaving deterministically: both requests have
+      // read the item (still TODO) before either one writes.
+      const repo = new ScheduleRepository(prisma);
+      const realFindOne = repo.findOne.bind(repo);
+      let reads = 0;
+      let releaseReads!: () => void;
+      const bothRead = new Promise<void>((resolve) => (releaseReads = resolve));
+      repo.findOne = (async (id: string, studentId: string) => {
+        const row = await realFindOne(id, studentId);
+        if (++reads === 2) releaseReads();
+        await bothRead;
+        return row;
+      }) as typeof repo.findOne;
+      const service = new ScheduleService(undefined, repo);
+
+      await Promise.all([
+        service.markStatus(student.id, schedule.id, "COMPLETED"),
+        service.markStatus(student.id, schedule.id, "COMPLETED"),
+      ]);
+
+      const progress = await prisma.progress.findUnique({ where: { studentId_date: { studentId: student.id, date: startOfDay() } } });
+      expect(progress).toMatchObject({ studyMinutes: 45, completedTasks: 1 });
     });
   });
 
@@ -470,6 +501,10 @@ describe("ScheduleService.autoTransitionForSubject (quiz-driven auto completion,
 
 describe("ScheduleService — generateWeek neutral-subject computation (real DB)", () => {
   const ai = { generateLearningPlan: vi.fn() };
+  // Pinned to a Monday: generation only plans today-onward, so on a real
+  // Sunday nothing would be planned (and the AI never called) at all.
+  const monday = new Date("2026-09-28T10:00:00");
+  const thisWeekStart = mondayOf(monday);
 
   function makeService() {
     return new ScheduleService(ai as any);
@@ -479,7 +514,10 @@ describe("ScheduleService — generateWeek neutral-subject computation (real DB)
     await resetDb();
     vi.clearAllMocks();
     ai.generateLearningPlan.mockResolvedValue({ days: [] });
+    vi.useFakeTimers();
+    vi.setSystemTime(monday);
   });
+  afterEach(() => vi.useRealTimers());
   afterAll(() => prisma.$disconnect());
 
   it("passes every catalog subject the student hasn't tested yet as neutralSubjects", async () => {
@@ -521,9 +559,54 @@ describe("ScheduleService — generateWeek neutral-subject computation (real DB)
     expect(call.neutralSubjects).toEqual([{ code: "HISTORY", nameUz: "Tarix", nameRu: "История" }]);
   });
 
+  it("passes MEDIUM-level subjects to the planner instead of silently dropping them", async () => {
+    const { student } = await createStudentUser({ grade: 8 });
+    const math = await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
+    const english = await createSubject({ code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" });
+    await prisma.subjectLevel.createMany({
+      data: [
+        { studentId: student.id, subjectId: math.id, level: "MEDIUM", score: 60, source: "test" },
+        { studentId: student.id, subjectId: english.id, level: "MEDIUM", score: 70, source: "test" },
+      ],
+    });
+
+    await makeService().generateWeek(student.id, "uz");
+
+    const call = ai.generateLearningPlan.mock.calls[0][0];
+    expect(call.mediumSubjects).toEqual(
+      expect.arrayContaining([
+        { code: "MATH", nameUz: "Matematika", nameRu: "Математика" },
+        { code: "ENGLISH", nameUz: "Ingliz tili", nameRu: "Английский" },
+      ])
+    );
+    expect(call.mediumSubjects).toHaveLength(2);
+    expect(call.neutralSubjects).toEqual([]);
+  });
+
+  it("clamps AI-proposed minutes to a whole, sane number before saving — a fractional value used to crash the insert with a 500", async () => {
+    const { student } = await createStudentUser({ grade: 8 });
+    await createSubject({ code: "MATH" });
+    ai.generateLearningPlan.mockResolvedValue({
+      days: [
+        { dayOfWeek: 1, subjectCode: "MATH", minutes: 12.5, title: "a", titleRu: "a" },
+        { dayOfWeek: 2, subjectCode: "MATH", minutes: -3, title: "b", titleRu: "b" },
+        { dayOfWeek: 3, subjectCode: "MATH", minutes: 500, title: "c", titleRu: "c" },
+      ],
+    });
+
+    const week = await makeService().generateWeek(student.id, "uz");
+
+    expect(week.map((i) => [i.dayOfWeek, i.minutes])).toEqual([
+      [1, 13],
+      [2, 1],
+      [3, 90],
+    ]);
+  });
+
   it("regenerate never deletes a COMPLETED or IN_PROGRESS item (and its StudySession history) — only TODO items are replaced", async () => {
     const { student } = await createStudentUser({ grade: 8 });
     const subject = await createSubject({ code: "MATH" });
+    const weekStart = thisWeekStart;
 
     const completed = await prisma.schedule.create({
       data: { studentId: student.id, weekStart, dayOfWeek: 1, title: "old completed", subjectId: subject.id, minutes: 30, status: "COMPLETED", source: "ai" },
@@ -553,6 +636,70 @@ describe("ScheduleService — generateWeek neutral-subject computation (real DB)
     expect(await prisma.schedule.findUnique({ where: { id: todo.id } })).toBeNull();
     const fresh = await prisma.schedule.findFirst({ where: { studentId: student.id, dayOfWeek: 4 } });
     expect(fresh).toMatchObject({ title: "fresh plan", status: "TODO" });
+  });
+});
+
+describe("ScheduleService — never plans days that are already gone (real DB)", () => {
+  const ai = { generateLearningPlan: vi.fn() };
+  const fullWeek = {
+    days: [1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({ dayOfWeek, subjectCode: "MATH", minutes: 10, title: "mashq", titleRu: "практика" })),
+  };
+  const thursday = new Date("2026-10-01T10:00:00");
+  const sunday = new Date("2026-10-04T10:00:00");
+
+  function makeService() {
+    return new ScheduleService(ai as any);
+  }
+
+  beforeEach(async () => {
+    await resetDb();
+    vi.clearAllMocks();
+    ai.generateLearningPlan.mockResolvedValue(fullWeek);
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+  afterAll(() => prisma.$disconnect());
+
+  it("a student whose first week starts on a Thursday gets Thu-Sat only — nothing that instantly turns SKIPPED (the reported bug)", async () => {
+    vi.setSystemTime(thursday);
+    const { student } = await createStudentUser({ grade: 8 });
+    await createSubject({ code: "MATH" });
+
+    await makeService().getCurrentWeek(student.id, "uz");
+    const secondLoad = await makeService().getCurrentWeek(student.id, "uz");
+
+    expect(secondLoad.map((i) => i.dayOfWeek)).toEqual([4, 5, 6]);
+    expect(secondLoad.every((i) => i.status === "TODO")).toBe(true);
+  });
+
+  it("regenerating mid-week records a past day's unfinished item as SKIPPED once, and adds nothing new to past days", async () => {
+    vi.setSystemTime(thursday);
+    const { student } = await createStudentUser({ grade: 8 });
+    const subject = await createSubject({ code: "MATH" });
+    const missedMonday = await prisma.schedule.create({
+      data: { studentId: student.id, weekStart: mondayOf(thursday), dayOfWeek: 1, title: "t", subjectId: subject.id, minutes: 10, status: "TODO", source: "ai" },
+    });
+
+    await makeService().generateWeek(student.id, "uz");
+    await makeService().generateWeek(student.id, "uz");
+
+    // Kept as real history (missed), not deleted as if never planned...
+    expect((await prisma.schedule.findUnique({ where: { id: missedMonday.id } }))?.status).toBe("SKIPPED");
+    // ...and repeated regenerating never piles extra SKIPPED rows onto Mon-Wed.
+    const pastDayItems = await prisma.schedule.count({ where: { studentId: student.id, dayOfWeek: { lt: 4 } } });
+    expect(pastDayItems).toBe(1);
+    const upcoming = await prisma.schedule.findMany({ where: { studentId: student.id, dayOfWeek: { gte: 4 } } });
+    expect(upcoming.map((i) => i.dayOfWeek).sort()).toEqual([4, 5, 6]);
+  });
+
+  it("on Sunday (rest day, every planned day already past) creates nothing and never calls the AI", async () => {
+    vi.setSystemTime(sunday);
+    const { student } = await createStudentUser({ grade: 8 });
+
+    const week = await makeService().getCurrentWeek(student.id, "uz");
+
+    expect(week).toEqual([]);
+    expect(ai.generateLearningPlan).not.toHaveBeenCalled();
   });
 });
 

@@ -121,11 +121,11 @@ export default function Dashboard() {
   const recommendation = useQuery({ queryKey: ["recommendation-learning"], queryFn: recommendationApi.getLearning });
 
   const todayDow = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const todayTasks = Array.isArray(schedule.data) ? schedule.data.filter((s: any) => s.dayOfWeek === todayDow) : [];
+  const todayTasks = (schedule.data ?? []).filter((s) => s.dayOfWeek === todayDow);
   // Completed tasks (including ones auto-inserted by a quiz taken outside the
   // original plan) would otherwise just keep piling up here — once done,
   // there's nothing left to act on, so only pending ones stay actionable.
-  const pendingTodayTasks = todayTasks.filter((t: any) => t.status !== "COMPLETED");
+  const pendingTodayTasks = todayTasks.filter((task) => task.status !== "COMPLETED");
   const allDoneToday = todayTasks.length > 0 && pendingTodayTasks.length === 0;
   const todayTasksLabel = todayTasks.length > 0 ? `${todayTasks.length - pendingTodayTasks.length}/${todayTasks.length}` : "—";
 
@@ -181,11 +181,12 @@ export default function Dashboard() {
                 <Skeleton className="h-14" />
               </div>
             ) : todayTasks.length === 0 ? (
-              <EmptyState
-                icon="📋"
-                title="Bugun uchun reja mavjud emas"
-                description="Profilingizni to'ldiring yoki haftalik rejani AI orqali yarating."
-              />
+              // Sunday is a rest day with no plan by design (see Schedule page).
+              todayDow === 7 ? (
+                <EmptyState icon="🌿" title={t("schedule.sundayEmptyTitle")} description={t("schedule.sundayEmptyDesc")} />
+              ) : (
+                <EmptyState icon="📋" title={t("dashboard.noTasksTitle")} description={t("dashboard.noTasksDesc")} />
+              )
             ) : allDoneToday ? (
               <div className="flex flex-col items-center text-center gap-3 py-4">
                 <span className="text-3xl" aria-hidden="true">
@@ -207,7 +208,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {pendingTodayTasks.map((task: any) => (
+                {pendingTodayTasks.map((task) => (
                   <div key={task.id} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
                     <div>
                       <p className="font-semibold">{task.subject?.name ?? task.title}</p>
@@ -275,18 +276,18 @@ export default function Dashboard() {
               <Skeleton className="h-24" />
             ) : recommendation.data?.items?.length ? (
               <ul className="flex flex-col gap-2 mb-3">
-                {recommendation.data.items.slice(0, 3).map((item: any, i: number) => (
+                {recommendation.data.items.slice(0, 3).map((item, i) => (
                   <li key={i} className="text-sm text-[var(--text-secondary)]">
                     • {item.reason}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-[var(--text-secondary)] mb-3">Hozircha tavsiya mavjud emas. Profilingizni to'ldiring.</p>
+              <p className="text-sm text-[var(--text-secondary)] mb-3">{t("dashboard.noRecommendation")}</p>
             )}
             <Link to="/chat">
               <Button variant="secondary" className="w-full">
-                AI bilan muhokama qilish →
+                {t("dashboard.discussWithAI")}
               </Button>
             </Link>
           </Card>
