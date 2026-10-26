@@ -7,3 +7,6 @@ dist/
 coverage/
 *.tsbuildinfo
 .DS_Store
+
+# Kept locally only — intentionally not published to GitHub.
+README.md

@@ -115,10 +115,17 @@ as-is instead of triggering refresh + a page reload that wiped the error;
 logout clears the React Query cache so the next user on the same device
 never sees the previous user's cached data.
 
-**Docker** — the backend image runs in `Asia/Tashkent` (all day-boundary
-logic is server-local) and seeds a brand-new, empty database on start
-(`npm run prisma:seed-if-empty`) so `docker compose up` comes up with the
-demo accounts; an existing database is never re-seeded.
+**Docker** — `docker compose up --build` runs Postgres (host port 5433, so
+it never collides with a local 5432), the backend and the frontend. Both
+images install with **pnpm + the committed lockfile** (same versions as
+local dev) and have a `.dockerignore`, so host macOS `node_modules` and
+`.env` secrets never end up in an image. The backend runs in
+`Asia/Tashkent` (all day-boundary logic is server-local), has OpenSSL for
+Prisma, applies migrations, and seeds a brand-new empty database on start
+(`prisma:seed-if-empty`) — an existing database is never re-seeded. The
+frontend is a **production build served by nginx** (SPA fallback, immutable
+`/assets` caching), not the Vite dev server; it waits for the backend's
+health check.
 
 **Branding** — logo mark is a growth-trend icon (`components/icons/LogoIcon.tsx`),
 used consistently across sidebar/auth/chat/landing/parent header.
@@ -155,9 +162,12 @@ used consistently across sidebar/auth/chat/landing/parent header.
   actually belongs to a checkout this parent issued — harmless today since
   `MockPaymentProvider.confirmPayment` always returns `true` regardless of
   input, but must be fixed when a real payment provider is wired in.
-- `client/Dockerfile` runs the Vite **dev** server (`npm run dev --host`),
-  fine for local/demo use via `docker compose up`, not production-ready
-  (needs a build + static-serve stage).
+- `docker-compose.yml` is set up for running on one machine: the API URL
+  baked into the frontend is `http://localhost:4000/api`, JWT secrets fall
+  back to placeholder defaults, and there's no TLS. A real deployment needs
+  its own `VITE_API_URL` build arg, real secrets, HTTPS (cookies become
+  `secure` under `NODE_ENV=production`) and same-site frontend/API domains
+  (see `authCookies.ts`).
 - **AI Memory UI, Skill Map UI, ParentWeeklyDigest** — schema models exist
   (`StudentGoal`/`Skill`/`StudentSkill`, `ParentWeeklyDigest`), no
   service/routes/UI built yet.
@@ -188,7 +198,7 @@ student (grade selector offers 4–11) to see that path.
 In rough priority order, picking up from the "Known gaps" above:
 1. Mock payment reference-ownership check (only needed before a real
    payment provider is wired in).
-2. Production Dockerfile for the client (build + static serve).
-3. Non-destructive question re-seeding (upsert, so `QuestionAttempt`
+2. Non-destructive question re-seeding (upsert, so `QuestionAttempt`
    history survives content updates).
+3. Deployment config beyond one machine (see the Docker known gap above).
 4. AI Memory / Skill Map UI, if those features are still wanted.

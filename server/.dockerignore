@@ -1,0 +1,11 @@
+# Host node_modules hold macOS binaries (Prisma engines, esbuild) — copied in
+# by `COPY . .` they would overwrite the image's own Linux install.
+node_modules
+dist
+coverage
+*.tsbuildinfo
+tests
+# Secrets stay out of the image; the container gets its config from compose.
+.env
+.env.*
+!.env.example

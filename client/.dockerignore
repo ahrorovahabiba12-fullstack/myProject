@@ -1,0 +1,8 @@
+# Host node_modules hold macOS binaries (esbuild) — copied in by `COPY . .`
+# they would overwrite the image's own Linux install.
+node_modules
+dist
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

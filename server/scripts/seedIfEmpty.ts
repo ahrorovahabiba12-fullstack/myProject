@@ -1,6 +1,6 @@
 // Container start-up helper (see server/Dockerfile): seeds a brand-new
 // database so `docker compose up` gives a usable app — subjects, questions
-// and the README's demo accounts — but never re-seeds an existing one. The
+// and the demo accounts (PROJECT_STATUS.md) — but never re-seeds an existing one. The
 // seed rewrites every hand-written question set, and QuestionAttempt rows
 // cascade-delete with their Question, so re-running it on each restart would
 // silently wipe every student's adaptive-quiz history.
