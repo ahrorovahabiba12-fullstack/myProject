@@ -13,8 +13,9 @@ function ttlToMs(ttl: string): number {
 
 // Access/refresh tokens are httpOnly cookies, never readable by client-side
 // JS — this is what actually closes the "steal a token from localStorage via
-// XSS" hole. `secure` is only forced outside development so a plain-HTTP
-// local dev server keeps working. `sameSite: "lax"` blocks the cookie from
+// XSS" hole. `secure` is only forced in production so a plain-HTTP local dev
+// server keeps working (COOKIE_SECURE overrides it, see config/env.ts).
+// `sameSite: "lax"` blocks the cookie from
 // being sent on cross-SITE requests (the CSRF vector this would otherwise
 // reopen) while still working for the frontend's same-site, cross-origin
 // (different port) fetch calls — same-origin-but-different-port counts as
@@ -23,7 +24,7 @@ function ttlToMs(ttl: string): number {
 // instead; this repo's frontend/backend are same-site by design.
 const baseCookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
+  secure: env.COOKIE_SECURE ? env.COOKIE_SECURE === "true" : env.NODE_ENV === "production",
   sameSite: "lax" as const,
 };
 

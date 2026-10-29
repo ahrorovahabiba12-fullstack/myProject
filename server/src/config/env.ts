@@ -19,6 +19,11 @@ const envSchema = z.object({
   // Left at 0 when nothing sits in front, so clients can't spoof their IP
   // through X-Forwarded-For.
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  // Overrides whether auth cookies are `secure` (default: only in
+  // production). "false" is solely for a server reached over plain HTTP
+  // before it has a domain and HTTPS — browsers drop `secure` cookies there,
+  // so every login bounces straight back to the login page.
+  COOKIE_SECURE: z.enum(["true", "false"]).optional(),
 }).superRefine((cfg, ctx) => {
   if (cfg.NODE_ENV !== "production") return;
   // Tokens signed with a short or guessable secret can be forged offline.
