@@ -240,20 +240,6 @@ export const notificationApi = {
   markRead: (id: string) => api.patch(`/notifications/${id}/read`).then((r) => r.data),
 };
 
-export interface SubscriptionStatus {
-  plan: "FREE" | "PREMIUM";
-  status: "ACTIVE" | "CANCELED" | "PAST_DUE" | "TRIALING";
-  renewsAt: string | null;
-}
-
-export const subscriptionApi = {
-  getStatus: () => api.get<SubscriptionStatus | null>("/subscription/status").then((r) => r.data),
-  startUpgrade: () => api.post<{ checkoutUrl: string; reference: string }>("/subscription/upgrade").then((r) => r.data),
-  confirmUpgrade: (reference: string) =>
-    api.post<{ success: boolean }>("/subscription/confirm", { reference }).then((r) => r.data),
-  cancel: () => api.post<{ success: boolean }>("/subscription/cancel").then((r) => r.data),
-};
-
 export const achievementApi = {
   list: () =>
     api
@@ -338,7 +324,6 @@ export interface AdminStats {
     newUsersTrend: DailyCountPoint[];
   };
   studentsByGrade: { grade: number; count: number }[];
-  subscriptions: { free: number; premium: number };
   quizzes: {
     totalAttempts: number;
     averageScore: number;
@@ -364,15 +349,6 @@ export interface AdminUser {
   createdAt: string;
   grade: number | null;
   childrenCount: number | null;
-}
-
-export interface AdminPremiumSubscriber {
-  id: string;
-  fullName: string;
-  email: string;
-  status: string;
-  renewsAt: string | null;
-  createdAt: string;
 }
 
 export interface AdminActiveStudentToday {
@@ -410,7 +386,6 @@ export interface AdminUniversity {
 export const adminApi = {
   getStats: () => api.get<AdminStats>("/admin/stats").then((r) => r.data),
   listUsers: () => api.get<AdminUser[]>("/admin/users").then((r) => r.data),
-  listPremiumSubscribers: () => api.get<AdminPremiumSubscriber[]>("/admin/premium-subscribers").then((r) => r.data),
   listActiveStudentsToday: () => api.get<AdminActiveStudentToday[]>("/admin/active-students-today").then((r) => r.data),
   listSubjects: () => api.get<AdminSubject[]>("/admin/subjects").then((r) => r.data),
   listCareers: () => api.get<AdminCareer[]>("/admin/careers").then((r) => r.data),

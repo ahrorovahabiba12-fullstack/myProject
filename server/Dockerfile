@@ -28,5 +28,11 @@ COPY . .
 RUN pnpm exec prisma generate
 RUN pnpm run build
 
+# The app only reads /app at runtime, so it doesn't need root — a hole in a
+# dependency then can't write to the image or the rest of the container.
+USER node
+
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm run prisma:seed-if-empty && node dist/server.js"]
+# `exec` replaces sh with node, so `docker stop`'s SIGTERM reaches node
+# directly instead of stopping at sh and waiting out the 10s kill timeout.
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm run prisma:seed-if-empty && exec node dist/server.js"]

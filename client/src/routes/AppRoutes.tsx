@@ -19,7 +19,6 @@ import Settings from "../pages/student/Settings";
 
 import ParentLayout from "../pages/parent/ParentLayout";
 import ParentDashboard from "../pages/parent/ParentDashboard";
-import Subscription from "../pages/parent/Subscription";
 
 import AdminLayout from "../pages/admin/AdminLayout";
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -51,7 +50,6 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute allow={["PARENT"]} />}>
         <Route element={<ParentLayout />}>
           <Route path="/parent" element={<ParentDashboard />} />
-          <Route path="/parent/subscription" element={<Subscription />} />
         </Route>
       </Route>
 

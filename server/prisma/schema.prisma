@@ -75,18 +75,6 @@ enum StudySessionSource {
   QUIZ
 }
 
-enum SubscriptionPlan {
-  FREE
-  PREMIUM
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  CANCELED
-  PAST_DUE
-  TRIALING
-}
-
 enum NotificationType {
   STREAK
   QUIZ_REMINDER
@@ -140,9 +128,8 @@ model Parent {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   students Student[]
 
-  reports      ParentReport[]
-  digests      ParentWeeklyDigest[]
-  subscription Subscription?
+  reports ParentReport[]
+  digests ParentWeeklyDigest[]
 }
 
 model Student {
@@ -592,22 +579,7 @@ model ParentWeeklyDigest {
   @@index([parentId, studentId, weekStart])
 }
 
-// ---------- SUBSCRIPTION / NOTIFICATIONS ----------
-
-model Subscription {
-  id        String              @id @default(uuid())
-  parentId  String              @unique
-  plan      SubscriptionPlan    @default(FREE)
-  status    SubscriptionStatus  @default(ACTIVE)
-  provider  String              @default("mock")
-  renewsAt  DateTime?
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-
-  parent Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  @@index([parentId])
-}
+// ---------- NOTIFICATIONS ----------
 
 model Notification {
   id          String           @id @default(uuid())

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Users, GraduationCap, Heart, CreditCard, Activity, Trophy, BookOpen, HelpCircle, Briefcase, Building2 } from "lucide-react";
+import { Users, GraduationCap, Heart, Activity, Trophy, BookOpen, HelpCircle, Briefcase, Building2 } from "lucide-react";
 import clsx from "clsx";
 import { adminApi } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton, Modal } from "../../components/ui/primitives";
@@ -43,7 +43,6 @@ function formatDate(date: string) {
 }
 
 type OpenModal =
-  | "premium"
   | "activeToday"
   | "subjects"
   | "questions"
@@ -57,11 +56,6 @@ export default function AdminDashboard() {
   const pickName = (item: { nameUz: string; nameRu: string }) => (i18n.language === "ru" ? item.nameRu : item.nameUz);
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: adminApi.getStats });
   const [openModal, setOpenModal] = useState<OpenModal>(null);
-  const premiumSubscribers = useQuery({
-    queryKey: ["admin-premium-subscribers"],
-    queryFn: adminApi.listPremiumSubscribers,
-    enabled: openModal === "premium",
-  });
   const activeStudentsToday = useQuery({
     queryKey: ["admin-active-students-today"],
     queryFn: adminApi.listActiveStudentsToday,
@@ -101,7 +95,7 @@ export default function AdminDashboard() {
     return <ErrorState message={t("admin.loadError")} onRetry={() => stats.refetch()} />;
   }
 
-  const { users, studentsByGrade, subscriptions, quizzes, engagement, catalog } = stats.data;
+  const { users, studentsByGrade, quizzes, engagement, catalog } = stats.data;
   const newUsersChart = users.newUsersTrend.map((p) => ({ date: formatDate(p.date), count: p.count }));
   const quizAttemptsChart = quizzes.attemptsTrend.map((p) => ({ date: formatDate(p.date), count: p.count }));
   const maxGradeCount = Math.max(1, ...studentsByGrade.map((g) => g.count));
@@ -125,12 +119,6 @@ export default function AdminDashboard() {
           onClick={() => navigate("/admin/users?role=PARENT")}
         />
         <StatCard
-          icon={<CreditCard size={18} />}
-          label={t("admin.premiumSubscribers")}
-          value={subscriptions.premium}
-          onClick={() => setOpenModal("premium")}
-        />
-        <StatCard
           icon={<Activity size={18} />}
           label={t("admin.activeStudentsToday")}
           value={engagement.activeStudentsToday}
@@ -138,37 +126,6 @@ export default function AdminDashboard() {
         />
         <StatCard icon={<Trophy size={18} />} label={t("admin.averageQuizScore")} value={`${quizzes.averageScore}%`} />
       </div>
-
-      <Modal open={openModal === "premium"} onClose={() => setOpenModal(null)} title={t("admin.premiumSubscribers")}>
-        {premiumSubscribers.isLoading ? (
-          <Skeleton className="h-32" />
-        ) : premiumSubscribers.isError ? (
-          <ErrorState message={t("admin.usersLoadError")} onRetry={() => premiumSubscribers.refetch()} />
-        ) : premiumSubscribers.data?.length === 0 ? (
-          <EmptyState title={t("admin.noUsersTitle")} />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-[var(--text-secondary)] border-b border-[var(--border-subtle)]">
-                  <th className="font-medium pb-2 pr-4">{t("admin.colName")}</th>
-                  <th className="font-medium pb-2 pr-4">{t("admin.colEmail")}</th>
-                  <th className="font-medium pb-2">{t("admin.colRegisteredAt")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {premiumSubscribers.data?.map((s) => (
-                  <tr key={s.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
-                    <td className="py-2.5 pr-4 font-medium">{s.fullName}</td>
-                    <td className="py-2.5 pr-4 text-[var(--text-secondary)]">{s.email}</td>
-                    <td className="py-2.5 text-[var(--text-secondary)]">{formatDate(s.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Modal>
 
       <Modal open={openModal === "activeToday"} onClose={() => setOpenModal(null)} title={t("admin.activeStudentsToday")}>
         {activeStudentsToday.isLoading ? (

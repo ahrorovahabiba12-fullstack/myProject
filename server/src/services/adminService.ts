@@ -44,7 +44,6 @@ export class AdminService {
     const [
       usersByRole,
       studentsByGrade,
-      subscriptionsByPlan,
       newUsers,
       recentQuizzes,
       quizStats,
@@ -57,7 +56,6 @@ export class AdminService {
     ] = await Promise.all([
       this.repo.countUsersByRole(),
       this.repo.countStudentsByGrade(),
-      this.repo.countSubscriptionsByPlan(),
       this.repo.usersCreatedSince(since),
       this.repo.quizResultsCreatedSince(since),
       this.repo.quizStatsAllTime(),
@@ -72,9 +70,6 @@ export class AdminService {
     const roleCounts: Record<string, number> = Object.fromEntries(
       usersByRole.map((r) => [r.role, r._count._all])
     );
-    const planCounts: Record<string, number> = Object.fromEntries(
-      subscriptionsByPlan.map((s) => [s.plan, s._count._all])
-    );
 
     return {
       users: {
@@ -85,10 +80,6 @@ export class AdminService {
         newUsersTrend: bucketByDay(newUsers.map((u) => u.createdAt), TREND_DAYS),
       },
       studentsByGrade: studentsByGrade.map((g) => ({ grade: g.grade, count: g._count._all })),
-      subscriptions: {
-        free: planCounts.FREE ?? 0,
-        premium: planCounts.PREMIUM ?? 0,
-      },
       quizzes: {
         totalAttempts: quizStats._count._all,
         averageScore: Math.round((quizStats._avg.score ?? 0) * 10) / 10,
@@ -103,18 +94,6 @@ export class AdminService {
       },
       catalog: { subjects, questions, careers, universities },
     };
-  }
-
-  async listPremiumSubscribers() {
-    const subs = await this.repo.listPremiumSubscribers();
-    return subs.map((s) => ({
-      id: s.id,
-      fullName: s.parent.user.fullName,
-      email: s.parent.user.email,
-      status: s.status,
-      renewsAt: s.renewsAt,
-      createdAt: s.createdAt,
-    }));
   }
 
   async listActiveStudentsToday() {

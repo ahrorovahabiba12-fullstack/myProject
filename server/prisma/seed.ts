@@ -4635,6 +4635,15 @@ async function main() {
     }
   }
 
+  // Every demo account shares one published password — on a public server
+  // that hands an ADMIN login to anyone who has read the README. Production
+  // gets the reference data only; the real admin comes from
+  // `create-superadmin`. SEED_DEMO_ACCOUNTS=true opts back in for a demo site.
+  if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO_ACCOUNTS !== "true") {
+    console.log("Seed complete. Demo accounts skipped (production) — create an admin with `pnpm run create-superadmin`.");
+    return;
+  }
+
   // Demo accounts: one parent with children in grades 7-11, plus a standalone student per grade.
   const demoPasswordHash = await bcrypt.hash("Demo12345!", 12);
 

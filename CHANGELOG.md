@@ -3,6 +3,19 @@
 Loyihadagi barcha muhim o'zgarishlar shu faylda, sana bo'yicha teskari
 tartibda (eng yangisi tepada) yoziladi.
 
+## 2026-10-28
+
+- **Olib tashlandi**: Subscription (Premium) butunlay — ota-ona panelidagi
+  obuna sahifasi va menyu havolasi, `/api/subscription` va
+  `/api/admin/premium-subscribers` endpointlari, `MockPaymentProvider`,
+  admin paneldagi "Premium obunachilar" kartochkasi, `PAYMENT_PROVIDER`
+  sozlamasi va `Subscription` jadvali (migratsiya
+  `20261028180000_remove_subscription`). Premium hech qaysi imkoniyatni
+  cheklamas edi; ilova hamma uchun bepul.
+- **Production**: `docker-compose.prod.yml` + `Caddyfile` (avtomatik HTTPS,
+  bitta domen), majburiy sirlar, `NODE_ENV=production`, production'da demo
+  akkountlar seed qilinmaydi, `TRUST_PROXY`, backend konteyneri root emas.
+
 ## 2026-09-22
 
 - **Feature**: Superadmin panelida "Foydalanuvchilar" endi alohida, doimiy

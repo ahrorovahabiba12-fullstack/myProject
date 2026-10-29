@@ -1,0 +1,20 @@
+# Used by docker-compose.prod.yml. Caddy obtains and renews the HTTPS
+# certificate for $DOMAIN on its own and redirects HTTP to HTTPS.
+{$DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy backend:4000
+	}
+
+	# The SPA. The API already gets these headers from helmet.
+	handle {
+		header {
+			Strict-Transport-Security "max-age=31536000"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "strict-origin-when-cross-origin"
+		}
+		reverse_proxy frontend:80
+	}
+}

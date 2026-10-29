@@ -29,8 +29,7 @@ Ota-onalar uchun alohida analitika paneli.
 - **Gamification** — points, streak, badge'lar
 - **Career/University** — **faqat 9-11 sinf uchun**, roadmap bilan; bu qoida frontend
   va backendning ikkalasida ham majburiy tekshiriladi
-- **Parent Dashboard** — farzand progress, AI hisobot (raw chat emas, xulosa),
-  Subscription (Premium) oqimi
+- **Parent Dashboard** — farzand progress, AI hisobot (raw chat emas, xulosa)
 - **i18n** — o'zbek (default) / rus
 - **Light/Dark mode**
 
@@ -64,7 +63,7 @@ Route → Controller → Service → Repository → Prisma → PostgreSQL
     /pages/auth            — Login, Register
     /pages/student          — Dashboard, AIChat, Quiz, Schedule, Progress, Achievements,
                                Career, CareerRoadmap, Universities, Profile, Settings
-    /pages/parent           — ParentDashboard, Subscription
+    /pages/parent           — ParentDashboard
     /pages/admin            — AdminDashboard, AdminUsers
     /lib/api.ts             — typed API client
     /store/authStore.ts     — zustand session state
@@ -73,7 +72,6 @@ Route → Controller → Service → Repository → Prisma → PostgreSQL
   /src
     /controllers, /services, /repositories, /routes, /middleware, /validators
     /providers/ai           — AIProvider interface + OpenAI/RuleBased/Mock implementations
-    /providers/payment      — PaymentProvider + MockPaymentProvider
     /providers/notification — NotificationProvider + InApp/Email/Telegram (stub)
     /prompts                — versioned AI prompt templates
   /prisma
@@ -151,9 +149,40 @@ docker compose ps              # backend "healthy" bo'lguncha kuting
 - To'xtatish: `docker compose down` (ma'lumotlar `postgres_data` volume'ida
   saqlanadi; butunlay o'chirish: `docker compose down -v`).
 
+## Production'ga chiqarish
+
+`docker-compose.prod.yml` bitta serverda (VPS) domen bilan ishlash uchun:
+Caddy HTTPS sertifikatini o'zi oladi va yangilaydi, frontend va API bitta
+domenda (`https://domen/api`), Postgres va backend tashqariga ochilmaydi.
+
+Talablar: Docker o'rnatilgan server, domenning DNS A yozuvi shu server IP'siga
+qaratilgan, 80 va 443 portlar ochiq.
+
+```bash
+cp .env.example .env
+# .env ni to'ldiring: DOMAIN va uchta sir (har biri: openssl rand -hex 32)
+docker compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml ps   # hammasi healthy bo'lguncha kuting
+```
+
+Birinchi admin (production'da demo akkountlar yaratilmaydi):
+```bash
+docker compose -f docker-compose.prod.yml exec \
+  -e SUPERADMIN_EMAIL=admin@domen.uz -e SUPERADMIN_PASSWORD='KamidaOnIkkiBelgi!' \
+  backend pnpm run create-superadmin
+```
+
+- Sirlardan biri bo'sh bo'lsa compose ishga tushmaydi; backend esa
+  production'da 32 belgidan qisqa yoki bir xil JWT sirlarini rad etadi.
+- Yangilash: `git pull`, keyin yana `up --build -d` (migratsiyalar avtomatik).
+- Zaxira nusxa: `docker compose -f docker-compose.prod.yml exec postgres pg_dump -U ai_advisor ai_advisor > backup.sql`
+- Ochiq demo sayt kerak bo'lsa `.env` da `SEED_DEMO_ACCOUNTS=true` (faqat bo'sh
+  bazada ishlaydi; parol hammaga ma'lum bo'lgan `Demo12345!`).
+
 ## Demo akkountlar
 
-Seed skripti quyidagilarni yaratadi (parol barchasi uchun bir xil):
+Seed skripti quyidagilarni yaratadi (parol barchasi uchun bir xil; production'da
+yaratilmaydi, yuqoriga qarang):
 
 | Rol | Email | Parol |
 |---|---|---|
@@ -192,9 +221,9 @@ npm test                       # backend unit + integration testlar
 `server/vitest.config.ts` `.env`dagi `DATABASE_URL`ni avtomatik `ai_advisor_test`
 bazasiga almashtiradi — asosiy `ai_advisor` bazasi test yugurtirishda hech qachon
 o'zgarmaydi yoki o'chirilmaydi. Har bir test fayli o'zining Student/Parent/Subject
-va h.k. qatorlarini o'zi yaratadi (repository darajasida mock yo'q); faqat AI/
-to'lov providerlari kabi tashqi/deterministik bo'lmagan chegaralar hali ham spy
-bilan almashtiriladi.
+va h.k. qatorlarini o'zi yaratadi (repository darajasida mock yo'q); faqat AI
+provider kabi tashqi/deterministik bo'lmagan chegaralar hali ham spy bilan
+almashtiriladi.
 
 ## AI sozlash
 
@@ -202,13 +231,6 @@ bilan almashtiriladi.
 `gpt-4o-mini`) qo'ying. Har qanday AI javobi `JSON.parse` → zod schema
 validatsiyasi → biznes validatsiya (masalan, confidence 0-1 oralig'ida,
 grade<9 uchun kasb yo'q) zanjiridan o'tgandan keyingina bazaga yoziladi.
-
-## To'lov (Subscription)
-
-Hozircha faqat `MockPaymentProvider` — real to'lov kredensiali yo'q. Checkout
-darhol "muvaffaqiyatli" bo'ladi, shuning uchun Premium oqimini kredensialsiz
-ham to'liq sinash mumkin. Real provayder qo'shish — `PaymentProvider`
-interfeysini implement qilish va `SubscriptionService`da almashtirish.
 
 ## Kelajakdagi rivojlanish
 

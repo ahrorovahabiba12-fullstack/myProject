@@ -12,8 +12,24 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(["mock", "openai"]).default("mock"),
   AI_API_KEY: z.string().optional().default(""),
   AI_MODEL: z.string().optional().default(""),
-  PAYMENT_PROVIDER: z.enum(["mock"]).default("mock"),
   FRONTEND_URL: z.string().default("http://localhost:5173"),
+  // Number of reverse proxies in front of the API (Caddy in
+  // docker-compose.prod.yml = 1). Without it every request looks like it
+  // comes from the proxy's IP, so all users share one rate-limit bucket.
+  // Left at 0 when nothing sits in front, so clients can't spoof their IP
+  // through X-Forwarded-For.
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+}).superRefine((cfg, ctx) => {
+  if (cfg.NODE_ENV !== "production") return;
+  // Tokens signed with a short or guessable secret can be forged offline.
+  for (const key of ["JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"] as const) {
+    if (cfg[key].length < 32) {
+      ctx.addIssue({ code: "custom", path: [key], message: `${key} must be at least 32 characters in production` });
+    }
+  }
+  if (cfg.JWT_ACCESS_SECRET === cfg.JWT_REFRESH_SECRET) {
+    ctx.addIssue({ code: "custom", path: ["JWT_REFRESH_SECRET"], message: "must differ from JWT_ACCESS_SECRET" });
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);

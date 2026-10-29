@@ -1,0 +1,104 @@
+# Production stack for a single server with a domain pointed at it:
+#
+#   cp .env.example .env      # then fill in every value
+#   docker compose -f docker-compose.prod.yml up --build -d
+#
+# Differences from docker-compose.yml (local use):
+# - Caddy is the only thing reachable from outside (80/443) and gets a
+#   Let's Encrypt certificate for $DOMAIN automatically. Frontend and API
+#   share that one origin (/api goes to the backend), so cookies stay
+#   first-party and the backend's `secure` cookies work.
+# - Postgres and the backend publish no ports.
+# - Every secret is required: compose refuses to start with one missing
+#   instead of falling back to a guessable default.
+# - NODE_ENV=production: secure cookies, no stack traces in error responses,
+#   and the seed skips the demo accounts.
+
+# Own project name: without it this file shares docker-compose.yml's project
+# (same folder), so on one machine it would replace the local containers and
+# reuse their database volume.
+name: ai-advisor-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ai_advisor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required (see .env.example)}
+      POSTGRES_DB: ai_advisor
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_advisor -d ai_advisor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://ai_advisor:${POSTGRES_PASSWORD}@postgres:5432/ai_advisor
+      DIRECT_URL: postgresql://ai_advisor:${POSTGRES_PASSWORD}@postgres:5432/ai_advisor
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required (see .env.example)}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required (see .env.example)}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      FRONTEND_URL: https://${DOMAIN:?DOMAIN is required (see .env.example)}
+      # Caddy is the one proxy hop in front of the API.
+      TRUST_PROXY: 1
+      SEED_DEMO_ACCOUNTS: ${SEED_DEMO_ACCOUNTS:-false}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  frontend:
+    build:
+      context: ./client
+      args:
+        # Same origin as the page, so no domain is baked into the bundle.
+        VITE_API_URL: /api
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      # 127.0.0.1, not localhost: nginx listens on IPv4 only and busybox
+      # wget may resolve localhost to ::1.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here — losing this volume means re-issuing them,
+      # and Let's Encrypt rate-limits repeated issuance for one domain.
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, CreditCard, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { LanguageSwitcher } from "../../components/layout/LanguageSwitcher";
@@ -41,12 +41,6 @@ export default function ParentLayout() {
           <nav className="flex items-center gap-4 text-sm font-medium">
             <NavLink to="/parent" end className="flex items-center gap-1.5 text-[var(--text-secondary)] [&.active]:text-brand-600">
               <LayoutDashboard size={16} /> {t("parent.dashboard")}
-            </NavLink>
-            <NavLink
-              to="/parent/subscription"
-              className="flex items-center gap-1.5 text-[var(--text-secondary)] [&.active]:text-brand-600"
-            >
-              <CreditCard size={16} /> {t("subscription.navLabel")}
             </NavLink>
             <NotificationPanel />
             <ThemeToggle />

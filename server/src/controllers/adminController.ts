@@ -17,10 +17,6 @@ export const updateUserStatus = asyncHandler(async (req: Request, res: Response)
   res.status(200).json(result);
 });
 
-export const listPremiumSubscribers = asyncHandler(async (_req: Request, res: Response) => {
-  res.status(200).json(await service.listPremiumSubscribers());
-});
-
 export const listActiveStudentsToday = asyncHandler(async (_req: Request, res: Response) => {
   res.status(200).json(await service.listActiveStudentsToday());
 });

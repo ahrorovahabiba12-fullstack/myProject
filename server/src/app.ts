@@ -17,7 +17,6 @@ import { scheduleRouter } from "./routes/scheduleRoutes";
 import { progressRouter } from "./routes/progressRoutes";
 import { parentRouter } from "./routes/parentRoutes";
 import { notificationRouter } from "./routes/notificationRoutes";
-import { subscriptionRouter } from "./routes/subscriptionRoutes";
 import { subjectRouter } from "./routes/subjectRoutes";
 import { achievementRouter } from "./routes/achievementRoutes";
 import { dailyCoachRouter } from "./routes/dailyCoachRoutes";
@@ -27,6 +26,7 @@ import { adminRouter } from "./routes/adminRoutes";
 
 export const app = express();
 
+app.set("trust proxy", env.TRUST_PROXY);
 app.use(helmet());
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
@@ -82,7 +82,6 @@ app.use("/api/schedule", scheduleRouter);
 app.use("/api/progress", progressRouter);
 app.use("/api/parent", parentRouter);
 app.use("/api/notifications", notificationRouter);
-app.use("/api/subscription", subscriptionRouter);
 app.use("/api/subjects", subjectRouter);
 app.use("/api/achievements", achievementRouter);
 app.use("/api/daily-coach", dailyCoachRouter);

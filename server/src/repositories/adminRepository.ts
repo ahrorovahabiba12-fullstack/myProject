@@ -11,10 +11,6 @@ export class AdminRepository {
     return this.db.student.groupBy({ by: ["grade"], _count: { _all: true }, orderBy: { grade: "asc" } });
   }
 
-  countSubscriptionsByPlan() {
-    return this.db.subscription.groupBy({ by: ["plan"], _count: { _all: true } });
-  }
-
   usersCreatedSince(since: Date) {
     return this.db.user.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } });
   }
@@ -80,20 +76,6 @@ export class AdminRepository {
 
   updateUserStatus(userId: string, status: UserStatus) {
     return this.db.user.update({ where: { id: userId }, data: { status } });
-  }
-
-  listPremiumSubscribers() {
-    return this.db.subscription.findMany({
-      where: { plan: "PREMIUM" },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        status: true,
-        renewsAt: true,
-        createdAt: true,
-        parent: { select: { user: { select: { fullName: true, email: true } } } },
-      },
-    });
   }
 
   listActiveStudentsToday() {

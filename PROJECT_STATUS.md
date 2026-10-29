@@ -13,9 +13,9 @@ against `ai_advisor_test`._
 - **Frontend**: every student/parent/admin page listed below exists, is
   routed, and has been exercised in a real browser (login → feature → real
   API response → rendered UI).
-- **Tests**: `npm --prefix server test` → **204 passing**, 0 failing. All
+- **Tests**: `npm --prefix server test` → **199 passing**, 0 failing. All
   real-DB (Postgres), no repository-layer mocking; only genuinely external
-  boundaries (AI provider, payment provider) are spied.
+  boundaries (the AI provider) are spied.
 - **Git**: single clean commit history on `origin/ai-advisor` (GitHub,
   `ahrorovahabiba12-fullstack/ai-advisor`). No secrets in history or working
   tree — `.gitignore` covers `.env`/`.env.*`, `server/.env.example` is the
@@ -92,8 +92,8 @@ sibling completed-only stats on the same card.
 **Gamification** — points, streak, badges (FIRST_QUIZ, SEVEN_DAY_STREAK,
 TEN_QUIZZES), idempotent grants.
 
-**Parent module** — `ParentLayout`/`ParentDashboard`/`Subscription` pages
-exist and are routed. `ParentService.assertOwnership` re-checked on every
+**Parent module** — `ParentLayout`/`ParentDashboard` pages exist and are
+routed. `ParentService.assertOwnership` re-checked on every
 method — a parent can never read another family's child via ID. A student
 links a parent either at sign-up or later from **Profile** (`PUT
 /api/students/me/parent`) — before, sign-up was the only chance, so a parent
@@ -102,9 +102,11 @@ who registered after their child could never be linked.
 **Notifications** — `NotificationPanel` UI exists and is wired to the real
 unread-count/list/mark-read endpoints.
 
-**Subscription** — FREE/PREMIUM via `PaymentProvider` abstraction;
-`MockPaymentProvider` only (instant-success, no real credential). UI exists
-(`pages/parent/Subscription.tsx`).
+**Subscription** — removed on 2026-10-28 (page, API, payment provider,
+admin "premium" stat, `Subscription` table via migration
+`20261028180000_remove_subscription`). Premium never gated any feature; the
+app is free for everyone. If paid plans come back, decide which features
+they unlock and enforce that server-side before wiring a real provider.
 
 **Admin** — `AdminDashboard`/`AdminUsers`, stats, user status management.
 
@@ -158,16 +160,14 @@ used consistently across sidebar/auth/chat/landing/parent header.
   invalidates any quiz in progress). Docker only seeds an empty database for
   this reason. Fix if content updates on live data are needed: upsert
   questions by a stable key instead of delete + recreate.
-- `SubscriptionService.confirmUpgrade` doesn't verify that `reference`
-  actually belongs to a checkout this parent issued — harmless today since
-  `MockPaymentProvider.confirmPayment` always returns `true` regardless of
-  input, but must be fixed when a real payment provider is wired in.
-- `docker-compose.yml` is set up for running on one machine: the API URL
-  baked into the frontend is `http://localhost:4000/api`, JWT secrets fall
-  back to placeholder defaults, and there's no TLS. A real deployment needs
-  its own `VITE_API_URL` build arg, real secrets, HTTPS (cookies become
-  `secure` under `NODE_ENV=production`) and same-site frontend/API domains
-  (see `authCookies.ts`).
+- `docker-compose.yml` is for local use only (placeholder secrets, no TLS,
+  demo accounts). Production is `docker-compose.prod.yml` + `Caddyfile` +
+  root `.env` (README "Production'ga chiqarish"): Caddy terminates HTTPS and
+  serves SPA and `/api` on one origin, every secret is required,
+  `NODE_ENV=production` (secure cookies, no stack traces, demo accounts not
+  seeded unless `SEED_DEMO_ACCOUNTS=true`), `TRUST_PROXY=1` so rate limits
+  key on the real client IP. Single server only, and no DB backups are
+  automated.
 - **AI Memory UI, Skill Map UI, ParentWeeklyDigest** — schema models exist
   (`StudentGoal`/`Skill`/`StudentSkill`, `ParentWeeklyDigest`), no
   service/routes/UI built yet.
@@ -196,9 +196,7 @@ student (grade selector offers 4–11) to see that path.
 ## Next steps (if resuming feature work)
 
 In rough priority order, picking up from the "Known gaps" above:
-1. Mock payment reference-ownership check (only needed before a real
-   payment provider is wired in).
-2. Non-destructive question re-seeding (upsert, so `QuestionAttempt`
+1. Non-destructive question re-seeding (upsert, so `QuestionAttempt`
    history survives content updates).
-3. Deployment config beyond one machine (see the Docker known gap above).
-4. AI Memory / Skill Map UI, if those features are still wanted.
+2. Deployment config beyond one machine (see the Docker known gap above).
+3. AI Memory / Skill Map UI, if those features are still wanted.

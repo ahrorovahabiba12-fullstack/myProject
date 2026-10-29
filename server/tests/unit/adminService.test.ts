@@ -9,20 +9,18 @@ describe("AdminService.getStats (real DB)", () => {
   beforeEach(() => resetDb());
   afterAll(() => prisma.$disconnect());
 
-  it("aggregates role counts and defaults a plan with zero subscriptions to 0", async () => {
+  it("aggregates role counts", async () => {
     await createStudentUser();
     await createStudentUser();
-    const { parent: premiumParent } = await createParentUser();
-    await createParentUser(); // no Subscription row at all -> FREE is implicit, absent from groupBy
+    await createParentUser();
+    await createParentUser();
     await prisma.user.create({
       data: { email: "admin-stats-test@test.uz", passwordHash: "x", fullName: "Admin", role: Role.ADMIN },
     });
-    await prisma.subscription.create({ data: { parentId: premiumParent.id, plan: "PREMIUM", status: "ACTIVE", provider: "mock" } });
 
     const stats = await new AdminService().getStats();
 
     expect(stats.users).toMatchObject({ total: 5, students: 2, parents: 2, admins: 1 });
-    expect(stats.subscriptions).toEqual({ free: 0, premium: 1 });
   });
 
   it("rounds the average quiz score to one decimal from real QuizResult rows", async () => {
@@ -226,18 +224,6 @@ describe("AdminService.updateUserStatus (real DB)", () => {
 describe("AdminService drill-down lists behind clickable stat cards (real DB)", () => {
   beforeEach(() => resetDb());
   afterAll(() => prisma.$disconnect());
-
-  it("listPremiumSubscribers returns only PREMIUM-plan parents, with their name and email", async () => {
-    const { parent: premiumParent, user: premiumUser } = await createParentUser({ fullName: "Premium Parent" });
-    const { parent: freeParent } = await createParentUser({ fullName: "Free Parent" });
-    await prisma.subscription.create({ data: { parentId: premiumParent.id, plan: "PREMIUM", status: "ACTIVE", provider: "mock" } });
-    await prisma.subscription.create({ data: { parentId: freeParent.id, plan: "FREE", status: "ACTIVE", provider: "mock" } });
-
-    const list = await new AdminService().listPremiumSubscribers();
-
-    expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ fullName: "Premium Parent", email: premiumUser.email, status: "ACTIVE" });
-  });
 
   it("listActiveStudentsToday matches countActiveStudentsToday's count exactly — same underlying definition of 'active'", async () => {
     const { student: activeStudent } = await createStudentUser({ fullName: "Active Student", grade: 9 });
