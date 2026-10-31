@@ -132,6 +132,35 @@ model Parent {
   digests ParentWeeklyDigest[]
 }
 
+model CareerTestResult {
+  id        String   @id @default(uuid())
+  studentId String
+  scores    Json
+  topTypes  String[]
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+}
+
+/// Study centres shown under "Uyingizga yaqin o'quv markazi kerakmi?".
+/// regions = [] means the centre teaches online / nationwide.
+model StudyCenter {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  subjects  String[]
+  regions   String[] @default([])
+  city      String   @default("")
+  cityRu    String   @default("")
+  website   String   @default("")
+  source    String   @default("")
+  sourceUrl String   @default("")
+  verified  Boolean  @default(false)
+  active    Boolean  @default(true)
+}
+
 model Student {
   id              String   @id @default(uuid())
   userId          String   @unique
@@ -160,6 +189,7 @@ model Student {
   dailyCoachEntries DailyCoach[]
   achievements     Achievement[]
   careerRecs       CareerRecommendation[]
+  careerTests      CareerTestResult[]
   universityRecs   UniversityRecommendation[]
   universityFits   UniversityFit[]
   consistencyScores ConsistencyScore[]
@@ -356,6 +386,12 @@ model Career {
   requiredSubjects String[]
   requiredSkills   String[]
   minGrade    Int     @default(9)
+  // "Kasb tanlash": Holland (RIASEC) types this career fits, most typical
+  // first, and the two DTM specialty subjects (Subject codes, 1st = 3.1-point
+  // block). Synced from prisma/content/careers.ts.
+  riasec       String[] @default([])
+  examSubjects String[] @default([])
+  extraExam    String   @default("")
 
   recommendations CareerRecommendation[]
   roadmapSteps    CareerRoadmapStep[]

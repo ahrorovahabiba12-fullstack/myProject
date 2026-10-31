@@ -48,4 +48,16 @@ export class CareerRepository {
       update: { matchScore, reasoning },
     });
   }
+
+  saveTestResult(studentId: string, scores: Record<string, number>, topTypes: string[]) {
+    return this.db.careerTestResult.create({ data: { studentId, scores, topTypes } });
+  }
+
+  latestTestResult(studentId: string) {
+    return this.db.careerTestResult.findFirst({ where: { studentId }, orderBy: { createdAt: "desc" } });
+  }
+
+  findStudyCenters(subject: string) {
+    return this.db.studyCenter.findMany({ where: { active: true, subjects: { has: subject } }, orderBy: { name: "asc" } });
+  }
 }

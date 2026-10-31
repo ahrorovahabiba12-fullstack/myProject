@@ -220,6 +220,57 @@ export const careerApi = {
       }>("/career/universities")
       .then((r) => r.data),
   getCatalog: () => api.get<{ code: string; name: string }[]>("/career/catalog").then((r) => r.data),
+  getTest: () => api.get<CareerTest>("/career/test").then((r) => r.data),
+  latestTest: () => api.get<CareerTestResult | null>("/career/test/latest").then((r) => r.data),
+  submitTest: (answers: number[]) => api.post<CareerTestResult>("/career/test", { answers }).then((r) => r.data),
+  getDetails: (code: string) => api.get<CareerDetails>(`/career/details/${code}`).then((r) => r.data),
+  studyCenters: (subject: string, region?: string | null) =>
+    api.get<StudyCenter[]>("/career/study-centers", { params: { subject, ...(region ? { region } : {}) } }).then((r) => r.data),
+};
+
+export type RiasecType = { code: string; name: string; description: string; emoji: string };
+export type CareerTest = { questions: { index: number; text: string }[]; types: RiasecType[] };
+export type CareerTestResult = {
+  createdAt: string;
+  scores: (RiasecType & { score: number })[];
+  topTypes: RiasecType[];
+  careers: { code: string; name: string; description: string; matchScore: number; types: RiasecType[]; examSubjects: string[] }[];
+};
+export type ExamBlock = { code: string; name: string; questions: number; points: number };
+export type CareerDetails = {
+  code: string;
+  name: string;
+  description: string;
+  types: RiasecType[];
+  exam: {
+    compulsory: ExamBlock[];
+    specialty: (ExamBlock & { block: "first" | "second"; myLevel: string | null; myScore: number | null })[];
+    maxScore: number;
+    extra: string | null;
+  };
+  universities: {
+    id: string;
+    name: string;
+    description: string;
+    city: string;
+    regionCode: string;
+    region: string;
+    programs: string[];
+    website: string;
+    nearMe: boolean;
+  }[];
+  studentRegion: string | null;
+  hasRoadmap: boolean;
+};
+export type StudyCenter = {
+  code: string;
+  name: string;
+  regions: string[];
+  city: string;
+  website: string;
+  source: string;
+  sourceUrl: string;
+  verified: boolean;
 };
 
 export interface ChatHistory {
@@ -404,4 +455,34 @@ export const adminApi = {
   listUniversities: () => api.get<AdminUniversity[]>("/admin/universities").then((r) => r.data),
   updateUserStatus: (userId: string, status: "ACTIVE" | "BLOCKED") =>
     api.patch<{ id: string; status: "ACTIVE" | "BLOCKED" }>(`/admin/users/${userId}/status`, { status }).then((r) => r.data),
+};
+
+
+export type DtmBlock = "first" | "second" | "compulsory";
+export type DtmSubjects = {
+  blocks: Record<DtmBlock | "max", { questions: number; points: number } | number>;
+  compulsory: string[];
+  subjects: { code: string; name: string; available: number; compulsory: boolean }[];
+};
+export type DtmStart = {
+  subject: { code: string; name: string };
+  block: DtmBlock;
+  points: number;
+  questions: { id: string; text: string; options: string[]; grade: number }[];
+  dtmToken: string;
+};
+export type DtmResult = {
+  block: DtmBlock;
+  correct: number;
+  total: number;
+  points: number;
+  maxPoints: number;
+  percent: number;
+  review: (Omit<QuizReviewItem, "selectedIndex"> & { selectedIndex: number | null })[];
+};
+export const dtmApi = {
+  subjects: () => api.get<DtmSubjects>("/dtm/subjects").then((r) => r.data),
+  start: (subject: string, block: DtmBlock) => api.post<DtmStart>("/dtm/start", { subject, block }).then((r) => r.data),
+  submit: (dtmToken: string, answers: { questionId: string; selectedIndex: number }[]) =>
+    api.post<DtmResult>("/dtm/submit", { dtmToken, answers }).then((r) => r.data),
 };

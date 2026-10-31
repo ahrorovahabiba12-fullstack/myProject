@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, Sparkles, BookOpenCheck, TrendingUp, Trophy, Compass, User, Settings } from "lucide-react";
+import { LayoutDashboard, Sparkles, BookOpenCheck, TrendingUp, Trophy, Compass, User, Settings, FileText } from "lucide-react";
 import clsx from "clsx";
 import { LogoIcon } from "../icons/LogoIcon";
 
@@ -10,7 +10,12 @@ export function StudentSidebar({ careerVisible, grade }: { careerVisible: boolea
   const items = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("nav_sidebar.dashboard") },
     { to: "/quiz", icon: BookOpenCheck, label: t("nav_sidebar.quiz") },
-    ...(careerVisible ? [{ to: "/career", icon: Compass, label: t("nav_sidebar.career") }] : []),
+    ...(careerVisible
+      ? [
+          { to: "/career", icon: Compass, label: t("nav_sidebar.career") },
+          { to: "/dtm", icon: FileText, label: t("nav_sidebar.dtm") },
+        ]
+      : []),
     { to: "/chat", icon: Sparkles, label: t("nav_sidebar.aiChat") },
     { to: "/progress", icon: TrendingUp, label: t("nav_sidebar.progress") },
     { to: "/achievements", icon: Trophy, label: t("nav_sidebar.achievements") },

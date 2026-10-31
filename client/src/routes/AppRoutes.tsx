@@ -12,6 +12,8 @@ import Progress from "../pages/student/Progress";
 import Achievements from "../pages/student/Achievements";
 import Career from "../pages/student/Career";
 import CareerRoadmap from "../pages/student/CareerRoadmap";
+import CareerDetail from "../pages/student/CareerDetail";
+import Dtm from "../pages/student/Dtm";
 import Universities from "../pages/student/Universities";
 import Profile from "../pages/student/Profile";
 import Settings from "../pages/student/Settings";
@@ -38,7 +40,9 @@ export default function AppRoutes() {
           <Route path="/progress" element={<Progress />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/career" element={<Career />} />
-          <Route path="/career/:careerCode" element={<CareerRoadmap />} />
+          <Route path="/career/:careerCode" element={<CareerDetail />} />
+          <Route path="/career/:careerCode/roadmap" element={<CareerRoadmap />} />
+          <Route path="/dtm" element={<Dtm />} />
           <Route path="/universities" element={<Universities />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />

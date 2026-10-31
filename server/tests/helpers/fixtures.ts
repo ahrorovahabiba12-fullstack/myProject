@@ -79,6 +79,8 @@ export function createCareer(overrides: {
   minGrade?: number;
   requiredSubjects?: string[];
   requiredSkills?: string[];
+  riasec?: string[];
+  examSubjects?: string[];
 } = {}) {
   const code = overrides.code ?? unique("CAREER");
   return prisma.career.create({
@@ -90,6 +92,8 @@ export function createCareer(overrides: {
       minGrade: overrides.minGrade ?? 9,
       requiredSubjects: overrides.requiredSubjects ?? [],
       requiredSkills: overrides.requiredSkills ?? [],
+      riasec: overrides.riasec ?? [],
+      examSubjects: overrides.examSubjects ?? [],
     },
   });
 }

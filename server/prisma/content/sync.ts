@@ -1,3 +1,5 @@
+import { STUDY_CENTERS } from "./careers";
+import { CAREER_META } from "../../src/constants/careerMeta";
 import { PrismaClient } from "@prisma/client";
 import { SUBJECTS, TOPICS, topicCode } from "./curriculum";
 import { ALL_QUESTIONS } from "./questions";
@@ -70,5 +72,18 @@ export async function syncContent(prisma: PrismaClient, log: (msg: string) => vo
     }
   }
 
-  log(`Kontent sinxronlandi: ${SUBJECTS.length} fan, ${topicCount} mavzu, ${questionCount} savol.`);
+  // Careers themselves are created by seed.ts; here we only (re)apply the
+  // "Kasb tanlash" metadata so a deployed DB picks it up without re-seeding.
+  let careerCount = 0;
+  for (const [code, m] of Object.entries(CAREER_META)) {
+    const extraExam = m.extra === "creative" ? "creative" : m.extra === "physical" ? "physical" : "";
+    const r = await prisma.career.updateMany({ where: { code }, data: { riasec: m.riasec, examSubjects: m.exam, extraExam } });
+    careerCount += r.count;
+  }
+  for (const c of STUDY_CENTERS) {
+    const data = { name: c.name, subjects: c.subjects, regions: c.regions, source: c.source, sourceUrl: c.sourceUrl, verified: true };
+    await prisma.studyCenter.upsert({ where: { code: c.code }, create: { code: c.code, ...data }, update: data });
+  }
+
+  log(`Kontent sinxronlandi: ${SUBJECTS.length} fan, ${topicCount} mavzu, ${questionCount} savol, ${careerCount} kasb, ${STUDY_CENTERS.length} o'quv markazi.`);
 }

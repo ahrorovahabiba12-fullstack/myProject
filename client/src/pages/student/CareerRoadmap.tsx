@@ -37,10 +37,10 @@ export default function CareerRoadmap() {
   return (
     <div className="max-w-2xl">
       <button
-        onClick={() => navigate("/career")}
+        onClick={() => navigate(`/career/${careerCode}`)}
         className="flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] mb-4"
       >
-        <ChevronLeft size={16} /> {t("career.backToList")}
+        <ChevronLeft size={16} /> {t("career.backToCareer")}
       </button>
       <h1 className="text-2xl font-bold mb-6">{t("career.roadmapTitle")}</h1>
       {roadmap.isLoading ? (
