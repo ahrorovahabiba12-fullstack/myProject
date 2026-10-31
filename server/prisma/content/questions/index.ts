@@ -5,12 +5,13 @@ import { PHYSICS } from "./physics";
 import { ENGLISH } from "./english";
 import { ENGLISH_UPPER } from "./englishUpper";
 import { RUSSIAN } from "./russian";
+import { RUSSIAN_UPPER } from "./russianUpper";
 import { BIOLOGY } from "./biology";
 
 export const ALL_QUESTIONS: Record<string, SubjectQuestions> = {
   MATH: { ...MATH, ...MATH_UPPER },
   PHYSICS,
   ENGLISH: { ...ENGLISH, ...ENGLISH_UPPER },
-  RUSSIAN,
+  RUSSIAN: { ...RUSSIAN, ...RUSSIAN_UPPER },
   BIOLOGY,
 };
