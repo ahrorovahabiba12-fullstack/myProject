@@ -8,6 +8,7 @@ import { Input } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import clsx from "clsx";
 import { LogoIcon } from "../../components/icons/LogoIcon";
+import { ALL_GRADES } from "../../constants/grades";
 
 export default function Register() {
   const { t } = useTranslation();
@@ -88,18 +89,28 @@ export default function Register() {
 
           {role === "STUDENT" && (
             <>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="grade" className="text-sm font-medium text-[var(--text-secondary)]">
-                  {t("auth.grade")}
-                </label>
-                <select id="grade" className="input-field" value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
-                  {Array.from({ length: 8 }, (_, i) => i + 4).map((g) => (
-                    <option key={g} value={g}>
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="text-sm font-medium text-[var(--text-secondary)] mb-1.5">{t("auth.grade")}</legend>
+                <p className="text-xs text-[var(--text-secondary)] -mt-1 mb-1">{t("auth.gradeHint")}</p>
+                <div className="grid grid-cols-6 gap-2">
+                  {ALL_GRADES.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGrade(g)}
+                      aria-pressed={grade === g}
+                      className={clsx(
+                        "h-11 rounded-xl font-bold border transition-colors",
+                        grade === g
+                          ? "bg-brand-gradient text-white border-transparent shadow-md"
+                          : "border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-brand-50 dark:hover:bg-brand-900/30"
+                      )}
+                    >
                       {g}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </div>
+                </div>
+              </fieldset>
               <Input
                 id="parentEmail"
                 type="email"

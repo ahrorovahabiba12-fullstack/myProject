@@ -1,3 +1,4 @@
+import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -18,13 +19,13 @@ export default function Career() {
   const recommendations = useQuery<CareerRecommendation[]>({
     queryKey: ["career-recommendations"],
     queryFn: careerApi.getRecommendations,
-    enabled: profile.data ? profile.data.grade >= 9 : false,
+    enabled: profile.data ? profile.data.grade >= MIN_CAREER_GRADE : false,
   });
 
   if (profile.isLoading) return <Skeleton className="h-40" />;
 
-  // CRITICAL GRADE RULE — frontend redirect, mirrors the backend's assertEligible(grade >= 9).
-  if (profile.data && profile.data.grade < 9) {
+  // CRITICAL GRADE RULE — frontend redirect, mirrors the backend's assertEligible(grade >= MIN_CAREER_GRADE).
+  if (profile.data && profile.data.grade < MIN_CAREER_GRADE) {
     return <Navigate to="/dashboard" replace />;
   }
 

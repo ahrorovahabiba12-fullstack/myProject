@@ -24,7 +24,6 @@ export class StudentService {
       parent: linked?.parent ? { fullName: linked.parent.user.fullName, email: linked.parent.user.email } : null,
       region: student.region,
       interests: student.interests,
-      favoriteSubjects: student.favoriteSubjects,
       goals: student.goals,
       careerInterests: student.careerInterests,
       careerModuleVisible: student.grade >= MIN_CAREER_GRADE,
@@ -39,7 +38,7 @@ export class StudentService {
 
   async updateProfile(
     studentId: string,
-    data: Partial<{ interests: string[]; favoriteSubjects: string[]; goals: string[]; careerInterests: string[]; region: string | null }>
+    data: Partial<{ interests: string[]; goals: string[]; careerInterests: string[]; region: string | null }>
   ) {
     return this.repo.updateProfile(studentId, data);
   }

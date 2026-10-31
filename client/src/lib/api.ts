@@ -82,7 +82,6 @@ export interface StudentProfile {
   parent: { fullName: string; email: string } | null;
   region: string | null;
   interests: string[];
-  favoriteSubjects: string[];
   goals: string[];
   careerInterests: string[];
   careerModuleVisible: boolean;
@@ -120,7 +119,7 @@ export const authApi = {
 export const studentApi = {
   getProfile: () => api.get<StudentProfile>("/students/me").then((r) => r.data),
   getDashboard: () => api.get<DashboardSummary>("/students/dashboard").then((r) => r.data),
-  updateProfile: (data: Partial<Pick<StudentProfile, "interests" | "favoriteSubjects" | "goals" | "careerInterests" | "region">>) =>
+  updateProfile: (data: Partial<Pick<StudentProfile, "interests" | "goals" | "careerInterests" | "region">>) =>
     api.patch<StudentProfile>("/students/me", data).then((r) => r.data),
   linkParent: (parentEmail: string) =>
     api.put<{ parent: { fullName: string; email: string } }>("/students/me/parent", { parentEmail }).then((r) => r.data),
@@ -194,24 +193,6 @@ export interface ChatHistory {
 export const chatApi = {
   getHistory: () => api.get<ChatHistory>("/chat/history").then((r) => r.data),
   sendMessage: (message: string) => api.post<{ conversationId: string; reply: string }>("/chat/message", { message }).then((r) => r.data),
-};
-
-export type ScheduleItem = {
-  id: string;
-  dayOfWeek: number;
-  title: string;
-  minutes: number;
-  actualMinutes: number;
-  actualSeconds: number;
-  status: "TODO" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
-  subject?: { name: string; code?: string } | null;
-  lastScore?: number | null;
-};
-
-export const scheduleApi = {
-  getCurrentWeek: () => api.get<ScheduleItem[]>("/schedule/current").then((r) => r.data),
-  regenerate: () => api.post<ScheduleItem[]>("/schedule/regenerate").then((r) => r.data),
-  updateStatus: (id: string, status: string) => api.patch(`/schedule/${id}/status`, { status }).then((r) => r.data),
 };
 
 export const progressApi = {
@@ -289,13 +270,7 @@ export interface DailyTrendPoint {
 }
 
 export interface StudyStats {
-  plannedTasks: number;
-  completedTasks: number;
-  incompleteTasks: number;
-  completionRate: number;
-  plannedMinutes: number;
   actualMinutes: number;
-  actualVsPlannedRate: number;
   sessionCount: number;
   avgSessionMinutes: number;
   consistencyScore: number;

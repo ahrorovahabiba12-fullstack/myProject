@@ -10,7 +10,7 @@ import { REGIONS } from "../constants/regions";
 
 const REGION_NAME_BY_CODE = new Map<string, (typeof REGIONS)[number]>(REGIONS.map((r) => [r.code, r]));
 
-export const MIN_CAREER_GRADE = 9;
+export const MIN_CAREER_GRADE = 8;
 
 // University.programs is free-text (e.g. "Software Engineering", "Medicine") with
 // no FK to Subject — this maps each subject to the program keywords it actually
@@ -48,7 +48,7 @@ export class CareerService {
 
   private assertEligible(grade: number) {
     if (grade < MIN_CAREER_GRADE) {
-      throw AppError.forbidden("Kasb va universitet tavsiyalari 9-sinfdan boshlab mavjud");
+      throw AppError.forbidden("Kasb va universitet tavsiyalari 8-sinfdan boshlab mavjud");
     }
   }
 
@@ -136,15 +136,12 @@ export class CareerService {
 
     // Narrowed to a single top subject (not every strong/medium one) — with
     // 41 real universities in the catalog, scoring against several subjects
-    // at once still surfaced nearly all of them. Prefer the student's own
-    // explicit favorite; most students never open the Profile picker, so
-    // fall back to their best quiz-derived subject (highest score, whatever
-    // its STRONG/MEDIUM/WEAK level) before giving up — a MEDIUM-level best
-    // subject is still a real, useful signal, not nothing. Only a genuinely
-    // brand-new student — no favorite set AND no quiz activity yet — gets no
-    // list at all, since there is truly no signal to base one on.
+    // at once still surfaced nearly all of them. Uses the student's best
+    // quiz-derived subject (highest score, whatever its level). A brand-new
+    // student with no quiz activity yet gets no list, since there is truly
+    // no signal to base one on.
     const bestQuizSubject = [...student.subjectLevels].sort((a, b) => b.score - a.score)[0];
-    const topSubjectCode = student.favoriteSubjects[0] ?? bestQuizSubject?.subject.code;
+    const topSubjectCode = bestQuizSubject?.subject.code;
     if (!topSubjectCode) {
       return { universities: [], topSubject: null };
     }

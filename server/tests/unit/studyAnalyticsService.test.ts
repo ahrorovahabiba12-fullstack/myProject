@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { StudyAnalyticsService, StudyStats } from "../../src/services/studyAnalyticsService";
-import { ScheduleRepository } from "../../src/repositories/scheduleRepository";
 import { StudySessionRepository } from "../../src/repositories/studySessionRepository";
 import { ConsistencyRepository } from "../../src/repositories/consistencyRepository";
 import { SubjectRepository } from "../../src/repositories/subjectRepository";
@@ -19,7 +18,6 @@ describe("StudyAnalyticsService.getStats (real DB)", () => {
 
   function makeService() {
     return new StudyAnalyticsService(
-      new ScheduleRepository(prisma),
       new StudySessionRepository(prisma),
       new ConsistencyRepository(prisma),
       new SubjectRepository(prisma),
@@ -35,44 +33,6 @@ describe("StudyAnalyticsService.getStats (real DB)", () => {
     gamification.currentStreak.mockResolvedValue(3);
   });
   afterAll(() => prisma.$disconnect());
-
-  it("computes plannedTasks/completedTasks/completionRate from Schedule items (task-based)", async () => {
-    const { student } = await createStudentUser();
-    const math = await createSubject({ code: "MATH" });
-    const weekStart = new Date();
-    await prisma.schedule.createMany({
-      data: [
-        { studentId: student.id, weekStart, dayOfWeek: 1, title: "t", subjectId: math.id, minutes: 30, status: "COMPLETED", source: "ai" },
-        { studentId: student.id, weekStart, dayOfWeek: 2, title: "t", subjectId: math.id, minutes: 30, status: "COMPLETED", source: "ai" },
-        { studentId: student.id, weekStart, dayOfWeek: 3, title: "t", subjectId: math.id, minutes: 30, status: "TODO", source: "ai" },
-        { studentId: student.id, weekStart, dayOfWeek: 4, title: "t", subjectId: math.id, minutes: 30, status: "IN_PROGRESS", source: "ai" },
-      ],
-    });
-
-    const stats = await makeService().getStats(student.id, "uz");
-
-    expect(stats.plannedTasks).toBe(4);
-    expect(stats.completedTasks).toBe(2);
-    expect(stats.incompleteTasks).toBe(2);
-    expect(stats.completionRate).toBe(50);
-  });
-
-  it("keeps plannedMinutes (Schedule) and actualMinutes (real StudySession time) separate", async () => {
-    const { student } = await createStudentUser();
-    const math = await createSubject({ code: "MATH" });
-    await prisma.schedule.create({
-      data: { studentId: student.id, weekStart: new Date(), dayOfWeek: 1, title: "t", subjectId: math.id, minutes: 60, status: "COMPLETED", source: "ai" },
-    });
-    await prisma.studySession.create({
-      data: { studentId: student.id, subjectId: math.id, startedAt: new Date(), minutes: 35, status: "COMPLETED" },
-    });
-
-    const stats = await makeService().getStats(student.id, "uz");
-
-    expect(stats.plannedMinutes).toBe(60);
-    expect(stats.actualMinutes).toBe(35);
-    expect(stats.actualVsPlannedRate).toBeCloseTo(58.3, 1);
-  });
 
   it("only counts COMPLETED sessions toward actualMinutes/sessionCount/subjectBreakdown, not in-progress ones", async () => {
     const { student } = await createStudentUser();
@@ -139,16 +99,10 @@ describe("StudyAnalyticsService.getStats (real DB)", () => {
 });
 
 describe("StudyAnalyticsService.buildRecommendation (pure, deterministic)", () => {
-  const service = new StudyAnalyticsService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any);
+  const service = new StudyAnalyticsService({} as any, {} as any, {} as any, {} as any, {} as any);
 
   const baseStats: StudyStats = {
-    plannedTasks: 10,
-    completedTasks: 8,
-    incompleteTasks: 2,
-    completionRate: 80,
-    plannedMinutes: 300,
     actualMinutes: 280,
-    actualVsPlannedRate: 93,
     sessionCount: 8,
     avgSessionMinutes: 35,
     consistencyScore: 60,
@@ -182,16 +136,8 @@ describe("StudyAnalyticsService.buildRecommendation (pure, deterministic)", () =
     expect(text).not.toContain("Ingliz tili");
   });
 
-  it("flags a low actual-vs-planned rate when no specific subject stands out", () => {
-    const stats: StudyStats = { ...baseStats, subjectBreakdown: [], actualVsPlannedRate: 30 };
-
-    const text = service.buildRecommendation(stats, "uz");
-
-    expect(text).toContain("30%");
-  });
-
   it("gives positive reinforcement for a 7+ day streak when nothing else needs flagging", () => {
-    const stats: StudyStats = { ...baseStats, subjectBreakdown: [], actualVsPlannedRate: 90, currentStreak: 9 };
+    const stats: StudyStats = { ...baseStats, subjectBreakdown: [], currentStreak: 9 };
 
     const text = service.buildRecommendation(stats, "uz");
 
@@ -199,7 +145,7 @@ describe("StudyAnalyticsService.buildRecommendation (pure, deterministic)", () =
   });
 
   it("respects the lang parameter (Russian output)", () => {
-    const stats: StudyStats = { ...baseStats, subjectBreakdown: [], actualVsPlannedRate: 90, currentStreak: 9 };
+    const stats: StudyStats = { ...baseStats, subjectBreakdown: [], currentStreak: 9 };
 
     const text = service.buildRecommendation(stats, "ru");
 

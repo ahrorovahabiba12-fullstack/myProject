@@ -18,7 +18,7 @@ function testPasswordHash(): Promise<string> {
 }
 
 export async function createStudentUser(
-  overrides: { grade?: number; fullName?: string; parentId?: string; favoriteSubjects?: string[]; region?: string } = {}
+  overrides: { grade?: number; fullName?: string; parentId?: string; topSubject?: string; region?: string } = {}
 ) {
   const passwordHash = await testPasswordHash();
   const user = await prisma.user.create({
@@ -34,10 +34,15 @@ export async function createStudentUser(
       userId: user.id,
       grade: overrides.grade ?? 9,
       parentId: overrides.parentId,
-      favoriteSubjects: overrides.favoriteSubjects ?? [],
       region: overrides.region,
     },
   });
+  // A strong quiz-derived level in `topSubject` — the signal the career
+  // module uses to pick which subject's universities to show.
+  if (overrides.topSubject) {
+    const subject = await createSubject({ code: overrides.topSubject });
+    await prisma.subjectLevel.create({ data: { studentId: student.id, subjectId: subject.id, level: "STRONG", score: 100, source: "quiz" } });
+  }
   return { user, student };
 }
 
@@ -57,8 +62,12 @@ export async function createParentUser(overrides: { fullName?: string } = {}) {
 
 export function createSubject(overrides: { code?: string; nameUz?: string; nameRu?: string } = {}) {
   const code = overrides.code ?? unique("SUBJ");
-  return prisma.subject.create({
-    data: { code, nameUz: overrides.nameUz ?? code, nameRu: overrides.nameRu ?? code, active: true },
+  // Upsert by code: a test may create the same subject both via
+  // createStudentUser({ topSubject }) and directly, with real names.
+  return prisma.subject.upsert({
+    where: { code },
+    create: { code, nameUz: overrides.nameUz ?? code, nameRu: overrides.nameRu ?? code, active: true },
+    update: { ...(overrides.nameUz && { nameUz: overrides.nameUz }), ...(overrides.nameRu && { nameRu: overrides.nameRu }) },
   });
 }
 

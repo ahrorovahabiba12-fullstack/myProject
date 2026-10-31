@@ -1,4 +1,4 @@
-import { AIProvider, CareerRecommendationInput, CareerRecommendationOutput, ChatContext, ChatMessageInput, DailyCoachInput, DailyCoachOutput, LearningPlanInput, LearningPlanOutput, LearningRecommendationInput, LearningRecommendationOutput, ParentReportInput, ParentReportOutput, ProgressAnalysisInput, ProgressAnalysisOutput } from "./AIProvider";
+import { AIProvider, CareerRecommendationInput, CareerRecommendationOutput, ChatContext, ChatMessageInput, DailyCoachInput, DailyCoachOutput, LearningRecommendationInput, LearningRecommendationOutput, ParentReportInput, ParentReportOutput, ProgressAnalysisInput, ProgressAnalysisOutput } from "./AIProvider";
 
 /**
  * Fully static provider for tests and offline demos — no computation over
@@ -26,10 +26,6 @@ export class MockAIProvider implements AIProvider {
       attentionAreas: ["Ingliz tili"],
       nextSteps: ["Demo qadam"],
     };
-  }
-
-  async generateLearningPlan(_i: LearningPlanInput): Promise<LearningPlanOutput> {
-    return { days: [{ dayOfWeek: 1, subjectCode: "MATH", minutes: 30, title: "Demo mashg'ulot", titleRu: "Демо-занятие" }] };
   }
 
   async chat(_c: ChatContext, _h: ChatMessageInput[], _m: string): Promise<string> {

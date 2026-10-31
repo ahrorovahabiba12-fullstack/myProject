@@ -6,24 +6,24 @@ import { prisma } from "../../src/config/prisma";
 import { resetDb } from "../helpers/db";
 import { createStudentUser, createSubject } from "../helpers/fixtures";
 
-// gamification/scheduleService stay spies — these tests specifically assert
+// gamification/studySessionRepo stay spies — these tests specifically assert
 // on cross-service side-effect wiring (exact call args, resilience when a
 // side effect throws), which real DB rows can't observe as directly as a
 // spy can. The quiz repository + the $transaction that actually persists
 // the result are real, against the test DB.
 describe("QuizService — server-side scoring (real DB)", () => {
   const gamification = { evaluateAfterQuiz: vi.fn().mockResolvedValue([]) };
-  const scheduleService = { autoTransitionForSubject: vi.fn().mockResolvedValue(undefined) };
+  const studySessionRepo = { createCompleted: vi.fn().mockResolvedValue(undefined) };
 
   function makeService() {
-    return new QuizService(new QuizRepository(prisma), new StudentRepository(prisma), gamification as any, scheduleService as any);
+    return new QuizService(new QuizRepository(prisma), new StudentRepository(prisma), gamification as any, studySessionRepo as any);
   }
 
   beforeEach(async () => {
     await resetDb();
     vi.clearAllMocks();
     gamification.evaluateAfterQuiz.mockResolvedValue([]);
-    scheduleService.autoTransitionForSubject.mockResolvedValue(undefined);
+    studySessionRepo.createCompleted.mockResolvedValue(undefined);
   });
   afterAll(() => prisma.$disconnect());
 
@@ -39,31 +39,6 @@ describe("QuizService — server-side scoring (real DB)", () => {
     expect(questions).toHaveLength(1);
     expect(questions[0]).not.toHaveProperty("correctIndex");
     expect(questions[0]).toMatchObject({ text: "2+2=?", options: ["3", "4", "5", "6"] });
-  });
-
-  it("auto-transitions today's matching schedule item(s) to IN_PROGRESS when a quiz starts", async () => {
-    const { student } = await createStudentUser({ grade: 8 });
-    const subject = await createSubject();
-    await prisma.question.create({
-      data: { subjectId: subject.id, grade: 8, text: "t", textRu: "t", options: [], optionsRu: [], correctIndex: 0 },
-    });
-
-    await makeService().startQuiz(student.id, subject.id, 8, "uz");
-
-    expect(scheduleService.autoTransitionForSubject).toHaveBeenCalledWith(student.id, subject.id, "IN_PROGRESS");
-  });
-
-  it("still returns questions even if the schedule auto-transition fails (non-critical side effect)", async () => {
-    const { student } = await createStudentUser({ grade: 8 });
-    const subject = await createSubject();
-    await prisma.question.create({
-      data: { subjectId: subject.id, grade: 8, text: "t", textRu: "t", options: [], optionsRu: [], correctIndex: 0 },
-    });
-    scheduleService.autoTransitionForSubject.mockRejectedValueOnce(new Error("boom"));
-
-    const { questions } = await makeService().startQuiz(student.id, subject.id, 8, "uz");
-
-    expect(questions).toHaveLength(1);
   });
 
   // Every submit goes through a real startQuiz first, so it carries a genuine
@@ -206,7 +181,7 @@ describe("QuizService — server-side scoring (real DB)", () => {
     });
   });
 
-  it("auto-transitions today's matching schedule item(s) to COMPLETED on submit, passing the real score, without asking ScheduleService to credit Progress again", async () => {
+  it("records the quiz as a completed QUIZ study session on submit", async () => {
     const { student } = await createStudentUser({ grade: 8 });
     const subject = await createSubject();
     const q1 = await prisma.question.create({
@@ -216,7 +191,16 @@ describe("QuizService — server-side scoring (real DB)", () => {
 
     await makeService().submitQuiz(student.id, quizToken, [{ questionId: q1.id, selectedIndex: 1 }], "ru");
 
-    expect(scheduleService.autoTransitionForSubject).toHaveBeenCalledWith(student.id, subject.id, "COMPLETED", 100, expect.any(Number));
+    expect(studySessionRepo.createCompleted).toHaveBeenCalledWith(
+      student.id,
+      null,
+      subject.id,
+      expect.any(Date),
+      expect.any(Date),
+      expect.any(Number),
+      expect.any(Number),
+      "QUIZ"
+    );
   });
 
   describe("credited study time comes from the server-signed start time, never the client", () => {
@@ -235,30 +219,30 @@ describe("QuizService — server-side scoring (real DB)", () => {
       vi.setSystemTime(new Date(new Date("2026-10-01T10:00:00").getTime() + elapsedMs));
       await makeService().submitQuiz(student.id, quizToken, [{ questionId: q1.id, selectedIndex: 1 }], "uz");
 
-      return scheduleService.autoTransitionForSubject.mock.calls.find((c) => c[2] === "COMPLETED")!;
+      return studySessionRepo.createCompleted.mock.calls[0];
     }
 
-    it("passes the real elapsed seconds between start and submit to autoTransitionForSubject", async () => {
+    it("records the real elapsed seconds between start and submit", async () => {
       const call = await completedCallAfter(8000);
 
-      expect(call[4]).toBe(8);
+      expect(call[6]).toBe(8);
     });
 
     it("caps a quiz left open for hours at 30 credited minutes instead of crediting the whole gap as study", async () => {
       const call = await completedCallAfter(5 * 60 * 60 * 1000);
 
-      expect(call[4]).toBe(30 * 60);
+      expect(call[6]).toBe(30 * 60);
     });
   });
 
-  it("still returns the quiz result even if the schedule auto-transition fails on submit", async () => {
+  it("still returns the quiz result even if recording the study session fails on submit", async () => {
     const { student } = await createStudentUser({ grade: 8 });
     const subject = await createSubject();
     const q1 = await prisma.question.create({
       data: { subjectId: subject.id, grade: 8, text: "a", textRu: "a", options: [], optionsRu: [], correctIndex: 1 },
     });
     const quizToken = await startToken(student.id, subject.id, 8);
-    scheduleService.autoTransitionForSubject.mockRejectedValueOnce(new Error("boom"));
+    studySessionRepo.createCompleted.mockRejectedValueOnce(new Error("boom"));
 
     const result = await makeService().submitQuiz(student.id, quizToken, [{ questionId: q1.id, selectedIndex: 1 }], "uz");
 

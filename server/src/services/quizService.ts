@@ -3,7 +3,7 @@ import { Badge, Prisma, SubjectLevelEnum } from "@prisma/client";
 import { QuizRepository } from "../repositories/quizRepository";
 import { StudentRepository } from "../repositories/studentRepository";
 import { GamificationService } from "./gamificationService";
-import { ScheduleService } from "./scheduleService";
+import { StudySessionRepository } from "../repositories/studySessionRepository";
 import { AppError } from "../utils/AppError";
 import { prisma } from "../config/prisma";
 import { Lang } from "../middleware/language";
@@ -38,7 +38,7 @@ export class QuizService {
     private repo = new QuizRepository(prisma),
     private studentRepo = new StudentRepository(prisma),
     private gamification = new GamificationService(),
-    private scheduleService = new ScheduleService()
+    private studySessionRepo = new StudySessionRepository(prisma)
   ) {}
 
   // grade is client-supplied on startQuiz, purely to pick which question pool
@@ -76,15 +76,6 @@ export class QuizService {
       return last ? WEIGHT_CORRECT_LAST_TIME : WEIGHT_WRONG_LAST_TIME;
     });
     const questions = weightedSampleWithoutReplacement(pool, weights, QUIZ_LENGTH);
-
-    // Best-effort: if today's schedule has a TODO task for this subject, starting a quiz
-    // on it is exactly the "studying this subject" signal — move it to IN_PROGRESS
-    // automatically. A schedule-linking failure must never block the quiz itself.
-    try {
-      await this.scheduleService.autoTransitionForSubject(studentId, subjectId, "IN_PROGRESS");
-    } catch {
-      /* non-critical side effect — quiz continues regardless */
-    }
 
     return {
       questions: questions.map((q) => ({
@@ -178,7 +169,7 @@ export class QuizService {
         throw err;
       });
 
-    // Best-effort like the schedule side effect below: the result is already
+    // Best-effort like the study-session side effect below: the result is already
     // saved, so a badge-granting hiccup must never turn this into a 500.
     let newBadges: Badge[] = [];
     try {
@@ -187,17 +178,27 @@ export class QuizService {
       /* non-critical side effect — quiz result still stands regardless */
     }
 
-    // Same best-effort auto-transition as startQuiz — mirrors the manual "Tugatdim"
-    // flow, but deliberately does NOT credit Progress again here: the $transaction
-    // above already credited completedTasks/scoreDelta for this exact real-world
-    // action (solving this subject's problems), so ScheduleService.autoTransitionForSubject
-    // only updates status/StudySession, never Progress, avoiding a double-count.
+    // Best-effort: record the real quiz-taking time as a QUIZ study session —
+    // that is what Progress/analytics count as study minutes. Progress itself
+    // was already credited by the $transaction above, so this only adds the
+    // session row; a failure here must never fail an already-saved result.
     try {
       const elapsedSeconds = Math.min(
         MAX_CREDITED_QUIZ_SECONDS,
         Math.max(0, Math.round((Date.now() - token.startedAt) / 1000))
       );
-      await this.scheduleService.autoTransitionForSubject(studentId, subjectId, "COMPLETED", score, elapsedSeconds);
+      const completedAt = new Date();
+      const startedAt = new Date(completedAt.getTime() - elapsedSeconds * 1000);
+      await this.studySessionRepo.createCompleted(
+        studentId,
+        null,
+        subjectId,
+        startedAt,
+        completedAt,
+        Math.round(elapsedSeconds / 60),
+        elapsedSeconds,
+        "QUIZ"
+      );
     } catch {
       /* non-critical side effect — quiz result still stands regardless */
     }

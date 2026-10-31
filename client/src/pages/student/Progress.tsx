@@ -78,19 +78,11 @@ export default function Progress() {
           <Skeleton className="h-32" />
         ) : stats.isError ? (
           <ErrorState message={t("progress.studyStatsError")} onRetry={() => stats.refetch()} />
-        ) : !stats.data || stats.data.plannedTasks === 0 ? (
+        ) : !stats.data || stats.data.sessionCount === 0 ? (
           <EmptyState title={t("progress.studyStatsEmptyTitle")} description={t("progress.studyStatsEmptyDesc")} />
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-2xl font-extrabold text-brand-600">{stats.data.completionRate}%</p>
-                <p className="text-xs text-[var(--text-secondary)]">{t("progress.completionRate")}</p>
-              </div>
-              <div>
-                <p className="text-2xl font-extrabold text-brand-600">{stats.data.actualVsPlannedRate}%</p>
-                <p className="text-xs text-[var(--text-secondary)]">{t("progress.actualVsPlanned")}</p>
-              </div>
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-2xl font-extrabold text-brand-600">{stats.data.actualMinutes}</p>
                 <p className="text-xs text-[var(--text-secondary)]">{t("progress.actualMinutes")}</p>
@@ -98,6 +90,10 @@ export default function Progress() {
               <div>
                 <p className="text-2xl font-extrabold text-brand-600">{stats.data.sessionCount}</p>
                 <p className="text-xs text-[var(--text-secondary)]">{t("progress.sessionCount")}</p>
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-brand-600">{stats.data.avgSessionMinutes}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{t("progress.avgSessionMinutes")}</p>
               </div>
             </div>
 
@@ -109,7 +105,7 @@ export default function Progress() {
                     <div key={s.subjectId} className="flex items-center justify-between text-sm">
                       <span>{s.subjectName}</span>
                       <span className="text-[var(--text-secondary)]">
-                        {s.sessionCount} {t("progress.sessions")} · {s.minutes} {t("schedule.minutes")}
+                        {s.sessionCount} {t("progress.sessions")} · {s.minutes} {t("progress.minutes")}
                       </span>
                     </div>
                   ))}

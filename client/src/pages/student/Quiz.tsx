@@ -77,11 +77,10 @@ export default function Quiz() {
       const payload: Answer[] = questions.map((q) => ({ questionId: q.id, selectedIndex: answers[q.id] }));
       const res = await quizApi.submit(quizToken, payload);
       setResult(res);
-      // Quiz submission has side effects beyond the quiz itself: it may auto-complete
-      // a matching Schedule item, change Progress/consistency/streak, unlock badges,
-      // and shift the Daily Coach message — every cached query touching that data
-      // must be invalidated, or Dashboard/Schedule keep showing stale state.
-      queryClient.invalidateQueries({ queryKey: ["schedule-current"] });
+      // Quiz submission has side effects beyond the quiz itself: it changes
+      // Progress/consistency/streak, unlocks badges, and shifts the Daily Coach
+      // message — every cached query touching that data must be invalidated,
+      // or the Dashboard keeps showing stale state.
       queryClient.invalidateQueries({ queryKey: ["consistency-score"] });
       queryClient.invalidateQueries({ queryKey: ["study-stats"] });
       queryClient.invalidateQueries({ queryKey: ["study-recommendation"] });

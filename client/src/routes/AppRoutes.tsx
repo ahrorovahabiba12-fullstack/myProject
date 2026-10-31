@@ -8,7 +8,6 @@ import StudentLayout from "../pages/student/StudentLayout";
 import Dashboard from "../pages/student/Dashboard";
 import AIChat from "../pages/student/AIChat";
 import Quiz from "../pages/student/Quiz";
-import Schedule from "../pages/student/Schedule";
 import Progress from "../pages/student/Progress";
 import Achievements from "../pages/student/Achievements";
 import Career from "../pages/student/Career";
@@ -36,7 +35,6 @@ export default function AppRoutes() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<AIChat />} />
           <Route path="/quiz" element={<Quiz />} />
-          <Route path="/schedule" element={<Schedule />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/career" element={<Career />} />

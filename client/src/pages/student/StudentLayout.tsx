@@ -11,7 +11,7 @@ export default function StudentLayout() {
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-page)]">
-      <StudentSidebar careerVisible={data?.careerModuleVisible ?? false} />
+      <StudentSidebar careerVisible={data?.careerModuleVisible ?? false} grade={data?.grade} />
       <div className="flex-1 px-4 sm:px-8 py-6 pb-24 lg:pb-6 max-w-6xl mx-auto w-full">
         {isLoading ? (
           <Skeleton className="h-9 w-64 mb-6" />
@@ -20,7 +20,7 @@ export default function StudentLayout() {
         )}
         <Outlet context={{ dashboard: data }} />
       </div>
-      <MobileBottomNav />
+      <MobileBottomNav careerVisible={data?.careerModuleVisible ?? false} />
     </div>
   );
 }

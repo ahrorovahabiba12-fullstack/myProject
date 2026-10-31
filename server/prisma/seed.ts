@@ -4405,8 +4405,8 @@ async function main() {
     CAREERS.map((c) =>
       prisma.career.upsert({
         where: { code: c.code },
-        create: { ...c, minGrade: 9 },
-        update: { ...c, minGrade: 9 },
+        create: { ...c, minGrade: 8 },
+        update: { ...c, minGrade: 8 },
       })
     )
   );
@@ -4599,7 +4599,7 @@ async function main() {
       // added later) always reach the DB, not just brand-new rows.
       await prisma.university.update({ where: { id: existing.id }, data: u });
     } else {
-      await prisma.university.create({ data: { ...u, minGrade: 9 } });
+      await prisma.university.create({ data: { ...u, minGrade: 8 } });
     }
   }
 
@@ -4686,12 +4686,12 @@ async function main() {
         region: s.region,
         parentId: parent.id,
         interests: ["Programming", "Football"],
-        favoriteSubjects: ["MATH", "INFORMATICS"],
+
         goals: ["Python o'rganish"],
-        careerInterests: s.grade >= 9 ? ["SOFTWARE_ENGINEER", "AI_ENGINEER"] : [],
+        careerInterests: s.grade >= 8 ? ["SOFTWARE_ENGINEER", "AI_ENGINEER"] : [],
       },
       // Deliberately empty — re-running seed must never overwrite a student's
-      // own live edits (interests, region, favoriteSubjects, etc.) made
+      // own live edits (interests, region, etc.) made
       // through the app after the row was first created.
       update: {},
     });

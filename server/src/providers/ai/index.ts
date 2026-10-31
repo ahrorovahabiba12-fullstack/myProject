@@ -7,8 +7,6 @@ import {
   ChatMessageInput,
   DailyCoachInput,
   DailyCoachOutput,
-  LearningPlanInput,
-  LearningPlanOutput,
   LearningRecommendationInput,
   LearningRecommendationOutput,
   ParentReportInput,
@@ -49,9 +47,6 @@ export class FallbackAIProvider implements AIProvider {
   }
   generateParentReport(i: ParentReportInput): Promise<ParentReportOutput> {
     return this.run((p) => p.generateParentReport(i));
-  }
-  generateLearningPlan(i: LearningPlanInput): Promise<LearningPlanOutput> {
-    return this.run((p) => p.generateLearningPlan(i));
   }
   chat(c: ChatContext, h: ChatMessageInput[], m: string): Promise<string> {
     return this.run((p) => p.chat(c, h, m));

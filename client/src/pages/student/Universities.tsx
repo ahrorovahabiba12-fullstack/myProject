@@ -1,3 +1,4 @@
+import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,11 +14,11 @@ export default function Universities() {
   const universities = useQuery({
     queryKey: ["universities"],
     queryFn: careerApi.getUniversities,
-    enabled: profile.data ? profile.data.grade >= 9 : false,
+    enabled: profile.data ? profile.data.grade >= MIN_CAREER_GRADE : false,
   });
 
   if (profile.isLoading) return <Skeleton className="h-40" />;
-  if (profile.data && profile.data.grade < 9) return <Navigate to="/dashboard" replace />;
+  if (profile.data && profile.data.grade < MIN_CAREER_GRADE) return <Navigate to="/dashboard" replace />;
 
   const studentRegion = REGIONS.find((r) => r.code === profile.data?.region);
   const studentRegionName = studentRegion ? (i18n.language === "ru" ? studentRegion.nameRu : studentRegion.nameUz) : null;
