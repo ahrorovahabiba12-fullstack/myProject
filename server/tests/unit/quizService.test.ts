@@ -15,6 +15,23 @@ describe("QuizService — server-side scoring (real DB)", () => {
   const gamification = { evaluateAfterQuiz: vi.fn().mockResolvedValue([]) };
   const studySessionRepo = { createCompleted: vi.fn().mockResolvedValue(undefined) };
 
+  // Questions in these tests are created per subject/grade; this puts all of
+  // them into one topic for that subject/grade and starts a quiz on it.
+  async function topicFor(subjectId: string, grade: number) {
+    const code = `T-${subjectId}-${grade}`;
+    const topic = await prisma.topic.upsert({
+      where: { code },
+      create: { code, subjectId, grade, nameUz: "Mavzu", nameRu: "Тема" },
+      update: {},
+    });
+    await prisma.question.updateMany({ where: { subjectId, grade, topicId: null }, data: { topicId: topic.id } });
+    return topic.id;
+  }
+
+  async function start(studentId: string, subjectId: string, grade: number, lang: "uz" | "ru" = "uz") {
+    return makeService().startQuiz(studentId, await topicFor(subjectId, grade), lang);
+  }
+
   function makeService() {
     return new QuizService(new QuizRepository(prisma), new StudentRepository(prisma), gamification as any, studySessionRepo as any);
   }
@@ -34,7 +51,7 @@ describe("QuizService — server-side scoring (real DB)", () => {
       data: { subjectId: subject.id, grade: 8, text: "2+2=?", textRu: "2+2=?", options: ["3", "4", "5", "6"], optionsRu: ["3", "4", "5", "6"], correctIndex: 1 },
     });
 
-    const { questions } = await makeService().startQuiz(student.id, subject.id, 8, "uz");
+    const { questions } = await start(student.id, subject.id, 8);
 
     expect(questions).toHaveLength(1);
     expect(questions[0]).not.toHaveProperty("correctIndex");
@@ -44,7 +61,7 @@ describe("QuizService — server-side scoring (real DB)", () => {
   // Every submit goes through a real startQuiz first, so it carries a genuine
   // server-signed quizToken — the only thing submitQuiz trusts about an attempt.
   async function startToken(studentId: string, subjectId: string, grade: number) {
-    return (await makeService().startQuiz(studentId, subjectId, grade, "uz")).quizToken;
+    return (await start(studentId, subjectId, grade)).quizToken;
   }
 
   it("computes score from actual correctIndex regardless of what the client claims", async () => {
@@ -74,18 +91,38 @@ describe("QuizService — server-side scoring (real DB)", () => {
     expect(saved).toMatchObject({ studentId: student.id, subjectId: subject.id, score: 50 });
   });
 
-  it("rejects start when the requested grade doesn't match the student's own profile grade, even if that grade's content genuinely exists", async () => {
+  it("lets a student practise another grade's topic, without changing their subject level", async () => {
     const { student } = await createStudentUser({ grade: 7 });
     const subject = await createSubject();
-    await prisma.question.create({
-      data: { subjectId: subject.id, grade: 11, text: "a", textRu: "a", options: [], optionsRu: [], correctIndex: 1 },
+    const q = await prisma.question.create({
+      data: { subjectId: subject.id, grade: 3, text: "a", textRu: "a", options: ["x", "y"], optionsRu: ["x", "y"], correctIndex: 1 },
     });
+    const quizToken = await startToken(student.id, subject.id, 3);
 
-    // The frontend always sends the student's own profile grade — a request
-    // claiming a different one (here grade 11 for a grade-7 student) can only
-    // be a tampered client, not a real UI flow, so it must be rejected before
-    // ever touching that grade's question pool (or issuing a token for it).
-    await expect(makeService().startQuiz(student.id, subject.id, 11, "uz")).rejects.toMatchObject({ statusCode: 400 });
+    const result = await makeService().submitQuiz(student.id, quizToken, [{ questionId: q.id, selectedIndex: 1 }], "uz");
+
+    expect(result.score).toBe(100);
+    expect(await prisma.subjectLevel.count({ where: { studentId: student.id } })).toBe(0);
+    const saved = await prisma.quizResult.findFirstOrThrow({ where: { studentId: student.id } });
+    expect(saved.grade).toBe(3);
+    expect(saved.topicId).not.toBeNull();
+  });
+
+  it("returns the written explanation in the review and a 5-point-scale evaluation", async () => {
+    const { student } = await createStudentUser({ grade: 5 });
+    const subject = await createSubject();
+    const q = await prisma.question.create({
+      data: {
+        subjectId: subject.id, grade: 5, text: "2+2", textRu: "2+2", options: ["3", "4"], optionsRu: ["3", "4"], correctIndex: 1,
+        explanation: "2 ga 2 ni qo'shsak 4 bo'ladi", explanationRu: "2 плюс 2 равно 4",
+      },
+    });
+    const quizToken = await startToken(student.id, subject.id, 5);
+
+    const result = await makeService().submitQuiz(student.id, quizToken, [{ questionId: q.id, selectedIndex: 0 }], "ru");
+
+    expect(result.review[0]).toMatchObject({ isCorrect: false, explanation: "2 плюс 2 равно 4" });
+    expect(result.evaluation.mark).toBe(2);
   });
 
   describe("quizToken — submit is bound to exactly what startQuiz served", () => {
@@ -304,8 +341,8 @@ describe("QuizService — server-side scoring (real DB)", () => {
       );
 
       expect(result.review).toEqual([
-        { questionId: q1.id, text: "2+2=?", options: ["3", "4"], selectedIndex: 1, correctIndex: 1, isCorrect: true },
-        { questionId: q2.id, text: "3+3=?", options: ["5", "6"], selectedIndex: 0, correctIndex: 1, isCorrect: false },
+        { questionId: q1.id, text: "2+2=?", options: ["3", "4"], selectedIndex: 1, correctIndex: 1, isCorrect: true, explanation: null },
+        { questionId: q2.id, text: "3+3=?", options: ["5", "6"], selectedIndex: 0, correctIndex: 1, isCorrect: false, explanation: null },
       ]);
     });
 
@@ -373,7 +410,7 @@ describe("QuizService — server-side scoring (real DB)", () => {
       let wrongCount = 0;
       let correctCount = 0;
       for (let i = 0; i < ROUNDS; i++) {
-        const { questions: picked } = await makeService().startQuiz(student.id, subject.id, 9, "uz");
+        const { questions: picked } = await start(student.id, subject.id, 9);
         const ids = new Set(picked.map((q) => q.id));
         if (ids.has(wrongQuestion.id)) wrongCount++;
         if (ids.has(correctQuestion.id)) correctCount++;

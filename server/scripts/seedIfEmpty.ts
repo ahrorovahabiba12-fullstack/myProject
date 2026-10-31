@@ -1,9 +1,8 @@
 // Container start-up helper (see server/Dockerfile): seeds a brand-new
 // database so `docker compose up` gives a usable app — subjects, questions
-// and the demo accounts (PROJECT_STATUS.md) — but never re-seeds an existing one. The
-// seed rewrites every hand-written question set, and QuestionAttempt rows
-// cascade-delete with their Question, so re-running it on each restart would
-// silently wipe every student's adaptive-quiz history.
+// and the demo accounts (PROJECT_STATUS.md) — but never re-seeds an existing one.
+// Quiz content (subjects, topics, questions) is kept up to date separately by
+// `npm run content:sync`, which only upserts and runs on every start.
 //
 //   npm run prisma:seed-if-empty
 import "dotenv/config";

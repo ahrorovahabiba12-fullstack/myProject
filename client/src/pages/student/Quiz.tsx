@@ -1,93 +1,344 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, ChevronLeft, ChevronRight, Sparkles, Check, X } from "lucide-react";
-import { subjectApi, quizApi, studentApi, QuizReviewItem } from "../../lib/api";
-import { Card, EmptyState, Skeleton } from "../../components/ui/primitives";
-import { Button } from "../../components/ui/Button";
+import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen } from "lucide-react";
 import clsx from "clsx";
+import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
+import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { Button } from "../../components/ui/Button";
 
-type Question = { id: string; text: string; options: string[] };
-type Answer = { questionId: string; selectedIndex: number };
-type QuizResult = { score: number; level: string; correctCount: number; total: number; newBadges: string[]; review: QuizReviewItem[] };
+const SUBJECT_STYLE: Record<string, { emoji: string; tile: string }> = {
+  MATH: { emoji: "🔢", tile: "from-brand-500 to-accentBlue" },
+  MOTHER_LANG: { emoji: "📖", tile: "from-emerald-400 to-teal-500" },
+  ENGLISH: { emoji: "🇬🇧", tile: "from-sky-400 to-blue-500" },
+  RUSSIAN: { emoji: "🔤", tile: "from-rose-400 to-pink-500" },
+  PHYSICS: { emoji: "⚛️", tile: "from-indigo-400 to-violet-500" },
+  CHEMISTRY: { emoji: "🧪", tile: "from-amber-400 to-orange-500" },
+  BIOLOGY: { emoji: "🌿", tile: "from-lime-400 to-green-500" },
+  INFORMATICS: { emoji: "💻", tile: "from-cyan-400 to-sky-500" },
+  HISTORY: { emoji: "🏛️", tile: "from-yellow-400 to-amber-500" },
+};
+const styleFor = (code: string) => SUBJECT_STYLE[code] ?? { emoji: "📘", tile: "from-brand-500 to-accentBlue" };
 
-export default function Quiz() {
+function StepHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
-  const profile = useQuery({ queryKey: ["profile"], queryFn: studentApi.getProfile });
-  const subjects = useQuery({ queryKey: ["subjects"], queryFn: subjectApi.list });
+  return (
+    <div className="flex items-start gap-3 mb-5">
+      {back && (
+        <button
+          onClick={back}
+          aria-label={t("quiz.back")}
+          className="mt-1 w-10 h-10 shrink-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] flex items-center justify-center hover:bg-brand-50 dark:hover:bg-brand-900/30"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
+      <div>
+        <h1 className="text-2xl font-extrabold">{title}</h1>
+        {subtitle && <p className="text-[var(--text-secondary)] mt-1">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
 
-  const [subjectId, setSubjectId] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<Question[] | null>(null);
-  const [quizToken, setQuizToken] = useState<string | null>(null);
+/** Screen 1 — the subjects taught in the student's own grade. */
+function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
+  const { t } = useTranslation();
+  const subjects = useQuery({ queryKey: ["quiz-subjects"], queryFn: quizApi.subjects });
+
+  return (
+    <div>
+      <StepHeader title={t("quiz.pickSubjectTitle")} subtitle={subjects.data ? t("quiz.pickSubjectSubtitle", { grade: subjects.data.grade }) : undefined} />
+      {subjects.isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+      ) : subjects.isError ? (
+        <ErrorState message={t("quiz.loadError")} onRetry={() => subjects.refetch()} />
+      ) : !subjects.data?.subjects.length ? (
+        <EmptyState icon="📚" title={t("quiz.noSubjects")} />
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          {subjects.data.subjects.map((s) => (
+            <button
+              key={s.code}
+              onClick={() => onPick(s)}
+              className={clsx(
+                "relative overflow-hidden text-left rounded-card p-4 sm:p-5 min-h-[112px] text-white bg-gradient-to-br shadow-card transition-transform hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300",
+                styleFor(s.code).tile
+              )}
+            >
+              <div className="absolute -right-5 -bottom-5 w-24 h-24 rounded-full bg-white/10" aria-hidden="true" />
+              <span className="text-3xl" aria-hidden="true">
+                {styleFor(s.code).emoji}
+              </span>
+              <p className="font-extrabold text-lg mt-2">{s.name}</p>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Screen 2 — which grade's programme to practise (any grade the subject is taught in). */
+function GradePicker({ subject, ownGrade, onPick, onBack }: { subject: QuizSubject; ownGrade?: number; onPick: (g: number) => void; onBack: () => void }) {
+  const { t } = useTranslation();
+  const grades = Array.from({ length: subject.maxGrade - subject.minGrade + 1 }, (_, i) => i + subject.minGrade);
+  return (
+    <div>
+      <StepHeader title={`${styleFor(subject.code).emoji} ${subject.name}`} subtitle={t("quiz.pickGradeSubtitle")} back={onBack} />
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        {grades.map((g) => {
+          const available = subject.grades.includes(g);
+          return (
+            <button
+              key={g}
+              disabled={!available}
+              onClick={() => onPick(g)}
+              className={clsx(
+                "relative h-20 rounded-2xl border-2 font-extrabold text-2xl transition-colors flex flex-col items-center justify-center",
+                g === ownGrade
+                  ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200"
+                  : "border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-brand-300",
+                !available && "opacity-40 cursor-not-allowed"
+              )}
+            >
+              {g}
+              <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                {g === ownGrade ? t("quiz.myGrade") : t("quiz.gradeShort")}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Screen 3 — the yearly topics of that subject in that grade. */
+function TopicPicker({ subject, grade, onPick, onBack }: { subject: QuizSubject; grade: number; onPick: (topicId: string) => void; onBack: () => void }) {
+  const { t } = useTranslation();
+  const topics = useQuery({ queryKey: ["quiz-topics", subject.code, grade], queryFn: () => quizApi.topics(subject.code, grade) });
+
+  return (
+    <div>
+      <StepHeader title={t("quiz.pickTopicTitle", { subject: subject.name, grade })} subtitle={t("quiz.pickTopicSubtitle")} back={onBack} />
+      {topics.isLoading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16" />
+          ))}
+        </div>
+      ) : topics.isError ? (
+        <ErrorState message={t("quiz.loadError")} onRetry={() => topics.refetch()} />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {topics.data?.topics.map((topic) => {
+            const ready = topic.questionCount > 0;
+            return (
+              <button
+                key={topic.id}
+                disabled={!ready}
+                onClick={() => onPick(topic.id)}
+                className={clsx(
+                  "flex items-center gap-4 text-left rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3.5 transition-colors",
+                  ready ? "hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/20" : "opacity-60 cursor-not-allowed"
+                )}
+              >
+                <span className="w-10 h-10 shrink-0 rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200 font-extrabold flex items-center justify-center">
+                  {topic.number}
+                </span>
+                <span className="flex-1 font-semibold">{topic.name}</span>
+                {ready ? (
+                  <span className="text-xs font-semibold text-[var(--text-secondary)] whitespace-nowrap">{t("quiz.questionsCount", { count: topic.questionCount })}</span>
+                ) : (
+                  <span className="text-xs font-semibold text-amber-600 whitespace-nowrap">{t("quiz.comingSoon")}</span>
+                )}
+                {ready && <ChevronRight size={18} className="text-[var(--text-secondary)]" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const MARK_STYLE: Record<number, string> = {
+  5: "from-emerald-400 to-teal-500",
+  4: "from-sky-400 to-blue-500",
+  3: "from-amber-400 to-orange-500",
+  2: "from-rose-400 to-red-500",
+};
+
+function ResultView({ quiz, result, onRetry, onOtherTopic }: { quiz: QuizStart; result: QuizSubmitResult; onRetry: () => void; onOtherTopic: () => void }) {
+  const { t } = useTranslation();
+  const [showEvaluation, setShowEvaluation] = useState(false);
+  const ev = result.evaluation;
+
+  return (
+    <div className="flex flex-col gap-5 max-w-3xl">
+      <Card className="text-center py-8">
+        <p className="text-sm font-semibold text-[var(--text-secondary)]">
+          {quiz.subject.name} · {quiz.topic.grade}-{t("profile.grade")} · {quiz.topic.name}
+        </p>
+        <p className="text-6xl font-extrabold text-brand-600 mt-3">{result.score}%</p>
+        <p className="mt-2 font-semibold">{t("quiz.correctOf", { correct: result.correctCount, total: result.total })}</p>
+        {result.newBadges.length > 0 && (
+          <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 bg-amber-100 rounded-full px-3 py-1 animate-scale-in">
+            <Award size={16} /> {t("quiz.newBadge")}: {result.newBadges.join(", ")}
+          </p>
+        )}
+      </Card>
+
+      <section aria-labelledby="review-title">
+        <h2 id="review-title" className="font-bold text-lg mb-3">
+          {t("quiz.reviewTitle")}
+        </h2>
+        <div className="flex flex-col gap-3">
+          {result.review.map((item, i) => (
+            <Card key={item.questionId} className={clsx("border-l-4", item.isCorrect ? "border-l-emerald-500" : "border-l-rose-500")}>
+              <div className="flex items-start gap-3">
+                <span
+                  className={clsx(
+                    "w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white",
+                    item.isCorrect ? "bg-emerald-500" : "bg-rose-500"
+                  )}
+                  aria-label={item.isCorrect ? t("quiz.correct") : t("quiz.wrong")}
+                >
+                  {item.isCorrect ? <Check size={16} /> : <X size={16} />}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold whitespace-pre-line">
+                    {i + 1}. {item.text}
+                  </p>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {item.options.map((opt, oi) => {
+                      const isRight = oi === item.correctIndex;
+                      const isPicked = oi === item.selectedIndex;
+                      return (
+                        <li
+                          key={oi}
+                          className={clsx(
+                            "text-sm rounded-lg px-3 py-1.5 flex items-center gap-2",
+                            isRight && "bg-emerald-50 text-emerald-800 font-semibold dark:bg-emerald-900/30 dark:text-emerald-200",
+                            isPicked && !isRight && "bg-rose-50 text-rose-800 line-through dark:bg-rose-900/30 dark:text-rose-200",
+                            !isRight && !isPicked && "text-[var(--text-secondary)]"
+                          )}
+                        >
+                          {isRight ? <Check size={14} /> : isPicked ? <X size={14} /> : <span className="w-3.5" />}
+                          {opt}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {!item.isCorrect && item.explanation && (
+                    <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3 text-sm text-amber-900 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-100">
+                      <p className="font-bold flex items-center gap-1.5 mb-1">
+                        <Lightbulb size={15} /> {t("quiz.explanation")}
+                      </p>
+                      <p className="whitespace-pre-line">{item.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {!showEvaluation ? (
+        <Button onClick={() => setShowEvaluation(true)} className="w-full text-lg py-4">
+          <span className="inline-flex items-center gap-2">
+            <Award size={20} /> {t("quiz.evaluateButton")}
+          </span>
+        </Button>
+      ) : (
+        <div className={clsx("rounded-card p-6 text-white bg-gradient-to-br shadow-card animate-scale-in", MARK_STYLE[ev.mark])}>
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 shrink-0 rounded-2xl bg-white/20 flex flex-col items-center justify-center">
+              <span className="text-4xl font-extrabold leading-none">{ev.mark}</span>
+              <span className="text-[11px] font-semibold text-white/85 mt-1">{t("quiz.markLabel")}</span>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold">{ev.title}</p>
+              <p className="text-white/90 mt-1">{ev.message}</p>
+            </div>
+          </div>
+          <p className="mt-4 bg-white/15 rounded-xl px-4 py-3 text-sm">💡 {ev.advice}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Button variant="secondary" onClick={onRetry}>
+          <span className="inline-flex items-center gap-2">
+            <RotateCcw size={16} /> {t("quiz.retryTopic")}
+          </span>
+        </Button>
+        <Button variant="secondary" onClick={onOtherTopic}>
+          <span className="inline-flex items-center gap-2">
+            <ListChecks size={16} /> {t("quiz.otherTopic")}
+          </span>
+        </Button>
+        <Link to="/chat" className="contents">
+          <Button variant="secondary">
+            <span className="inline-flex items-center gap-2">
+              <Sparkles size={16} /> {t("quiz.discussWithAI")}
+            </span>
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/** Screens 4–5 — answering one question at a time, then the result. */
+function QuizRunner({ topicId, onOtherTopic }: { topicId: string; onOtherTopic: () => void }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [attempt, setAttempt] = useState(0);
+  const quiz = useQuery({ queryKey: ["quiz-start", topicId, attempt], queryFn: () => quizApi.start(topicId), staleTime: Infinity, gcTime: 0 });
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<QuizResult | null>(null);
+  const [result, setResult] = useState<QuizSubmitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const startQuiz = async (id: string) => {
-    if (!profile.data) return;
-    setLoading(true);
+  const retry = () => {
+    setCurrent(0);
+    setAnswers({});
+    setResult(null);
     setError(null);
-    try {
-      const { questions, quizToken } = await quizApi.start(id, profile.data.grade);
-      setQuestions(questions);
-      setQuizToken(quizToken);
-      setSubjectId(id);
-      setCurrent(0);
-      setAnswers({});
-      setResult(null);
-    } catch {
-      setError(t("quiz.notAvailable"));
-    } finally {
-      setLoading(false);
-    }
+    setAttempt((a) => a + 1);
   };
 
-  // Lets a link like /quiz?subject=ENGLISH (e.g. from the dashboard's "study
-  // this subject today" suggestion) jump straight into that subject's quiz,
-  // skipping the picker — resolved by code once the subject list has loaded.
-  const preselectedCode = searchParams.get("subject");
-  const autoStartedRef = useRef(false);
-  useEffect(() => {
-    if (!preselectedCode || autoStartedRef.current || !subjects.data || !profile.data) return;
-    const match = subjects.data.find((s) => s.code === preselectedCode);
-    if (match) {
-      autoStartedRef.current = true;
-      startQuiz(match.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preselectedCode, subjects.data, profile.data]);
+  if (quiz.isLoading) return <Skeleton className="h-80 max-w-3xl" />;
+  if (quiz.isError || !quiz.data) return <ErrorState message={t("quiz.notAvailable")} onRetry={() => quiz.refetch()} />;
 
-  const selectAnswer = (index: number) => {
-    if (!questions) return;
-    setAnswers((prev) => ({ ...prev, [questions[current].id]: index }));
-  };
+  const data = quiz.data;
+  if (result) return <ResultView quiz={data} result={result} onRetry={retry} onOtherTopic={onOtherTopic} />;
+
+  const q = data.questions[current];
+  const total = data.questions.length;
+  const allAnswered = data.questions.every((x) => answers[x.id] !== undefined);
 
   const submit = async () => {
-    if (!questions || !quizToken) return;
     setSubmitting(true);
     setError(null);
     try {
-      const payload: Answer[] = questions.map((q) => ({ questionId: q.id, selectedIndex: answers[q.id] }));
-      const res = await quizApi.submit(quizToken, payload);
+      const res = await quizApi.submit(
+        data.quizToken,
+        data.questions.map((x) => ({ questionId: x.id, selectedIndex: answers[x.id] }))
+      );
       setResult(res);
-      // Quiz submission has side effects beyond the quiz itself: it changes
-      // Progress/consistency/streak, unlocks badges, and shifts the Daily Coach
-      // message — every cached query touching that data must be invalidated,
-      // or the Dashboard keeps showing stale state.
-      queryClient.invalidateQueries({ queryKey: ["consistency-score"] });
-      queryClient.invalidateQueries({ queryKey: ["study-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["study-recommendation"] });
-      queryClient.invalidateQueries({ queryKey: ["daily-coach-today"] });
-      queryClient.invalidateQueries({ queryKey: ["achievements"] });
-      queryClient.invalidateQueries({ queryKey: ["progress-overview"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      // Submission changes progress, streak, badges and the daily coach message.
+      for (const key of ["consistency-score", "study-stats", "study-recommendation", "daily-coach-today", "achievements", "progress-overview", "dashboard-summary", "profile"]) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
     } catch {
       setError(t("quiz.submitError"));
     } finally {
@@ -95,164 +346,121 @@ export default function Quiz() {
     }
   };
 
-  // ---- Result screen ----
-  if (result) {
-    const levelLabel = result.level === "STRONG" ? t("quiz.levelStrong") : result.level === "MEDIUM" ? t("quiz.levelMedium") : t("quiz.levelWeak");
-    return (
-      <Card className="max-w-lg mx-auto text-center">
-        <div className="w-16 h-16 rounded-full bg-brand-gradient text-white flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 size={32} />
-        </div>
-        <p className="text-4xl font-extrabold mb-1">{result.score}%</p>
-        <p className="text-[var(--text-secondary)] mb-1">
-          {result.correctCount}/{result.total} {t("quiz.correctAnswers")}
-        </p>
-        <span className="inline-block bg-brand-100 text-brand-700 text-sm font-semibold px-3 py-1 rounded-full mb-6">{levelLabel} {t("quiz.level")}</span>
-
-        {result.newBadges.length > 0 && (
-          <div className="bg-amber-50 text-amber-700 text-sm font-medium rounded-xl px-4 py-3 mb-6">
-            🏆 {t("quiz.newBadge")}: {result.newBadges.join(", ")}
-          </div>
-        )}
-
-        {result.review.length > 0 && (
-          <div className="text-left mb-6">
-            <p className="font-semibold mb-3">{t("quiz.reviewTitle")}</p>
-            <div className="flex flex-col gap-3">
-              {result.review.map((r, i) => (
-                <div key={r.questionId} className="rounded-xl border border-[var(--border-subtle)] p-3">
-                  <div className="flex items-start gap-2 mb-2">
-                    <span
-                      className={clsx(
-                        "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white",
-                        r.isCorrect ? "bg-emerald-500" : "bg-red-500"
-                      )}
-                    >
-                      {r.isCorrect ? <Check size={12} /> : <X size={12} />}
-                    </span>
-                    <p className="text-sm font-medium">
-                      {i + 1}. {r.text}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1 pl-7">
-                    {r.options.map((opt, oi) => (
-                      <div
-                        key={oi}
-                        className={clsx(
-                          "text-sm rounded-lg px-2.5 py-1.5",
-                          oi === r.correctIndex && "bg-emerald-50 text-emerald-700 font-medium",
-                          oi === r.selectedIndex && oi !== r.correctIndex && "bg-red-50 text-red-700 line-through",
-                          oi !== r.correctIndex && oi !== r.selectedIndex && "text-[var(--text-secondary)]"
-                        )}
-                      >
-                        {opt}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3">
-          <Button onClick={() => navigate("/chat")}>
-            <Sparkles size={16} className="inline mr-1.5" /> {t("quiz.discussWithAI")}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setResult(null);
-              setQuestions(null);
-              setSubjectId(null);
-            }}
-          >
-            {t("quiz.retakeTest")}
-          </Button>
-        </div>
-      </Card>
-    );
-  }
-
-  // ---- Question flow ----
-  if (questions && subjectId) {
-    const q = questions[current];
-    const answered = answers[q.id] !== undefined;
-    const isLast = current === questions.length - 1;
-    const allAnswered = questions.every((qq) => answers[qq.id] !== undefined);
-
-    return (
-      <Card className="max-w-xl mx-auto">
-        <div className="flex items-center justify-between mb-1 text-sm text-[var(--text-secondary)]">
+  return (
+    <div className="max-w-3xl">
+      <StepHeader title={data.topic.name} subtitle={`${data.subject.name} · ${data.topic.grade}-${t("profile.grade")}`} back={onOtherTopic} />
+      <Card className="p-5 sm:p-7">
+        <div className="flex items-center justify-between text-sm font-semibold text-[var(--text-secondary)] mb-2">
           <span>
-            {t("quiz.question")} {current + 1}/{questions.length}
+            {t("quiz.question")} {current + 1} / {total}
           </span>
+          <span>{Object.keys(answers).length} ✓</span>
         </div>
-        <div className="h-1.5 bg-brand-100 rounded-full overflow-hidden mb-6">
-          <div className="h-full bg-brand-gradient transition-all" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
-        </div>
-
-        <h2 className="font-semibold text-lg mb-5">{q.text}</h2>
-
-        <div className="flex flex-col gap-3 mb-6">
-          {q.options.map((opt, i) => (
-            <button
-              key={i}
-              onClick={() => selectAnswer(i)}
-              className={clsx(
-                "text-left rounded-xl border px-4 py-3 transition-colors",
-                answers[q.id] === i
-                  ? "border-brand-500 bg-brand-50 text-brand-700 font-semibold"
-                  : "border-[var(--border-subtle)] hover:bg-brand-50/50 hover:text-brand-700"
-              )}
-            >
-              {opt}
-            </button>
-          ))}
+        <div className="h-2 bg-brand-100 dark:bg-brand-900/40 rounded-full overflow-hidden mb-6" aria-hidden="true">
+          <div className="h-full bg-brand-gradient transition-all" style={{ width: `${((current + 1) / total) * 100}%` }} />
         </div>
 
-        {error && <p className="text-danger text-sm mb-4">{error}</p>}
+        <p className="text-xl font-bold mb-5 whitespace-pre-line">{q.text}</p>
+        <div className="flex flex-col gap-3" role="radiogroup" aria-label={q.text}>
+          {q.options.map((opt, i) => {
+            const selected = answers[q.id] === i;
+            return (
+              <button
+                key={i}
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setAnswers((a) => ({ ...a, [q.id]: i }))}
+                className={clsx(
+                  "flex items-center gap-3 text-left rounded-2xl border-2 px-4 py-3.5 font-medium transition-colors min-h-[56px]",
+                  selected
+                    ? "border-brand-500 bg-brand-50 dark:bg-brand-900/30"
+                    : "border-[var(--border-subtle)] hover:border-brand-300 bg-[var(--bg-card)]"
+                )}
+              >
+                <span
+                  className={clsx(
+                    "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-sm",
+                    selected ? "bg-brand-500 text-white" : "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                  )}
+                >
+                  {String.fromCharCode(65 + i)}
+                </span>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
 
-        <div className="flex items-center justify-between">
-          <Button variant="secondary" onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0}>
-            <ChevronLeft size={16} className="inline" /> {t("quiz.previous")}
+        {error && (
+          <p role="alert" className="text-sm text-danger mt-4">
+            {error}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between gap-3 mt-7">
+          <Button variant="secondary" disabled={current === 0} onClick={() => setCurrent((c) => c - 1)}>
+            <span className="inline-flex items-center gap-1">
+              <ChevronLeft size={18} /> {t("quiz.previous")}
+            </span>
           </Button>
-          {isLast ? (
-            <Button onClick={submit} loading={submitting} disabled={!allAnswered}>
-              {t("quiz.finish")}
+          {current < total - 1 ? (
+            <Button disabled={answers[q.id] === undefined} onClick={() => setCurrent((c) => c + 1)}>
+              <span className="inline-flex items-center gap-1">
+                {t("quiz.next")} <ChevronRight size={18} />
+              </span>
             </Button>
           ) : (
-            <Button onClick={() => setCurrent((c) => c + 1)} disabled={!answered}>
-              {t("quiz.next")} <ChevronRight size={16} className="inline" />
+            <Button disabled={!allAnswered} loading={submitting} onClick={submit}>
+              {t("quiz.finish")}
             </Button>
           )}
         </div>
       </Card>
-    );
-  }
-
-  // ---- Subject picker ----
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">{t("quiz.title")}</h1>
-      {subjects.isLoading || loading ? (
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Skeleton className="h-20" />
-          <Skeleton className="h-20" />
-        </div>
-      ) : subjects.data?.length === 0 ? (
-        <EmptyState title={t("quiz.noSubjects")} />
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
-          {subjects.data?.map((s) => (
-            <button key={s.id} onClick={() => startQuiz(s.id)} className="card text-left hover:border-brand-300 transition-colors">
-              <p className="font-semibold">{s.name}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{t("quiz.startTest")} →</p>
-            </button>
-          ))}
-        </div>
-      )}
-      {error && <p className="text-danger text-sm mt-4">{error}</p>}
     </div>
+  );
+}
+
+/**
+ * Test section: subject → grade → yearly topic → questions → result.
+ * Subject and grade live in the URL (?subject=MATH&grade=5) so the browser's
+ * back button and dashboard deep links work; the running quiz is local state.
+ */
+export default function Quiz() {
+  const { t } = useTranslation();
+  const [params, setParams] = useSearchParams();
+  const subjects = useQuery({ queryKey: ["quiz-subjects"], queryFn: quizApi.subjects });
+  const [topicId, setTopicId] = useState<string | null>(null);
+
+  const subjectCode = params.get("subject");
+  const gradeParam = params.get("grade");
+  const grade = gradeParam ? Number(gradeParam) : null;
+  const subject = subjects.data?.subjects.find((s) => s.code === subjectCode) ?? null;
+
+  const go = (next: { subject?: string; grade?: number }) => {
+    setTopicId(null);
+    const p = new URLSearchParams();
+    if (next.subject) p.set("subject", next.subject);
+    if (next.subject && next.grade) p.set("grade", String(next.grade));
+    setParams(p);
+  };
+
+  if (subjectCode && subjects.isLoading) return <Skeleton className="h-64" />;
+
+  if (subject && grade && topicId) {
+    return <QuizRunner key={topicId} topicId={topicId} onOtherTopic={() => setTopicId(null)} />;
+  }
+  if (subject && grade) {
+    return <TopicPicker subject={subject} grade={grade} onPick={setTopicId} onBack={() => go({ subject: subject.code })} />;
+  }
+  if (subject) {
+    return <GradePicker subject={subject} ownGrade={subjects.data?.grade} onPick={(g) => go({ subject: subject.code, grade: g })} onBack={() => go({})} />;
+  }
+  return (
+    <>
+      <SubjectPicker onPick={(s) => go({ subject: s.code })} />
+      <p className="mt-6 text-sm text-[var(--text-secondary)] flex items-center gap-2">
+        <BookOpen size={16} /> {t("quiz.pickSubjectHint")}
+      </p>
+    </>
   );
 }

@@ -176,11 +176,36 @@ model Subject {
   nameUz String
   nameRu String
   active Boolean @default(true)
+  // School grades in which this subject is taught (inclusive) — the Test
+  // section only offers a subject inside this range.
+  minGrade  Int @default(1)
+  maxGrade  Int @default(11)
+  sortOrder Int @default(0)
 
   subjectLevels SubjectLevel[]
   quizResults   QuizResult[]
   schedules     Schedule[]
   questions     Question[]
+  topics        Topic[]
+}
+
+// One yearly curriculum topic of a subject in one grade (e.g. Matematika,
+// 5-sinf, "Oddiy kasrlar"). `code` is a stable key so re-seeding upserts
+// instead of delete + recreate (which used to wipe QuestionAttempt history).
+model Topic {
+  id        String @id @default(uuid())
+  code      String @unique
+  subjectId String
+  grade     Int
+  sortOrder Int    @default(0)
+  nameUz    String
+  nameRu    String
+
+  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  quizResults QuizResult[]
+
+  @@index([subjectId, grade, sortOrder])
 }
 
 model SubjectLevel {
@@ -201,19 +226,28 @@ model SubjectLevel {
 
 model Question {
   id           String   @id @default(uuid())
+  // Stable seed key — lets content updates upsert in place. Null on legacy rows.
+  code         String?  @unique
   subjectId    String
+  topicId      String?
   grade        Int
   text         String
   textRu       String
   options      String[]
   optionsRu    String[]
   correctIndex Int
+  // Why the correct answer is correct — shown to the student after a wrong
+  // answer. "" means none written for this question.
+  explanation   String  @default("")
+  explanationRu String  @default("")
   createdAt    DateTime @default(now())
 
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topic   Topic?  @relation(fields: [topicId], references: [id], onDelete: SetNull)
   attempts QuestionAttempt[]
 
   @@index([subjectId, grade])
+  @@index([topicId])
 }
 
 // One row per (student, question) answer, across every quiz attempt —
@@ -247,10 +281,13 @@ model QuizResult {
   // same questions with corrected answers for a free 100%. Null on rows that
   // predate quiz tokens.
   attemptId   String?          @unique
+  // The topic this attempt was drawn from (null for legacy whole-subject quizzes).
+  topicId     String?
   createdAt   DateTime         @default(now())
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topic   Topic?  @relation(fields: [topicId], references: [id], onDelete: SetNull)
 
   @@index([studentId, subjectId, attemptDate])
 }

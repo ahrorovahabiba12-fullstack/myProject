@@ -49,6 +49,8 @@ export interface QuizTokenPayload {
   studentId: string;
   subjectId: string;
   grade: number;
+  // Optional: tokens issued before topics existed don't carry one.
+  topicId?: string;
   questionIds: string[];
   startedAt: number; // epoch ms — iat alone only has 1-second precision
 }

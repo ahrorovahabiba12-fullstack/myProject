@@ -35,4 +35,4 @@ USER node
 EXPOSE 4000
 # `exec` replaces sh with node, so `docker stop`'s SIGTERM reaches node
 # directly instead of stopping at sh and waiting out the 10s kill timeout.
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm run prisma:seed-if-empty && exec node dist/server.js"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm run prisma:seed-if-empty && pnpm run content:sync && exec node dist/server.js"]

@@ -136,22 +136,59 @@ export interface QuizReviewItem {
   selectedIndex: number;
   correctIndex: number;
   isCorrect: boolean;
+  explanation: string | null;
+}
+
+export interface QuizSubject {
+  code: string;
+  name: string;
+  minGrade: number;
+  maxGrade: number;
+  grades: number[];
+}
+
+export interface QuizTopic {
+  id: string;
+  number: number;
+  name: string;
+  questionCount: number;
+}
+
+export interface QuizEvaluation {
+  mark: 2 | 3 | 4 | 5;
+  title: string;
+  message: string;
+  advice: string;
+}
+
+export interface QuizStart {
+  topic: { id: string; name: string; grade: number };
+  subject: { code: string; name: string };
+  questions: { id: string; text: string; options: string[] }[];
+  quizToken: string;
+}
+
+export interface QuizSubmitResult {
+  score: number;
+  level: string;
+  correctCount: number;
+  total: number;
+  newBadges: string[];
+  review: QuizReviewItem[];
+  evaluation: QuizEvaluation;
 }
 
 export const quizApi = {
-  start: (subjectId: string, grade: number) =>
+  subjects: () => api.get<{ grade: number; subjects: QuizSubject[] }>("/quiz/subjects").then((r) => r.data),
+  topics: (subject: string, grade: number) =>
     api
-      .post<{ questions: { id: string; text: string; options: string[] }[]; quizToken: string }>("/quiz/start", { subjectId, grade })
+      .get<{ subject: { code: string; name: string }; grade: number; topics: QuizTopic[] }>("/quiz/topics", { params: { subject, grade } })
       .then((r) => r.data),
+  start: (topicId: string) => api.post<QuizStart>("/quiz/start", { topicId }).then((r) => r.data),
   // quizToken is start's opaque, server-signed record of this attempt — echoed
-  // back as-is; the server takes subject, grade and timing from it.
+  // back as-is; the server takes subject, grade, topic and timing from it.
   submit: (quizToken: string, answers: { questionId: string; selectedIndex: number }[]) =>
-    api
-      .post<{ score: number; level: string; correctCount: number; total: number; newBadges: string[]; review: QuizReviewItem[] }>(
-        "/quiz/submit",
-        { quizToken, answers }
-      )
-      .then((r) => r.data),
+    api.post<QuizSubmitResult>("/quiz/submit", { quizToken, answers }).then((r) => r.data),
 };
 
 export interface LearningRecommendation {

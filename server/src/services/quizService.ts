@@ -18,9 +18,9 @@ const levelFromScore = (score: number): SubjectLevelEnum => {
 };
 
 // How many questions a single quiz attempt shows, drawn (weighted) from the
-// full pool for that subject/grade — a pool larger than this is what gives
-// the adaptive re-selection below any room to actually vary.
-const QUIZ_LENGTH = 5;
+// full pool for that topic — a pool larger than this is what gives the
+// adaptive re-selection below any room to actually vary.
+const QUIZ_LENGTH = 10;
 // Relative selection weights, keyed by the student's own most recent
 // outcome on that exact question: missed last time -> favored to reappear
 // soon; got it right -> still possible ("kamdan-kam" = rarely), never
@@ -41,26 +41,55 @@ export class QuizService {
     private studySessionRepo = new StudySessionRepository(prisma)
   ) {}
 
-  // grade is client-supplied on startQuiz, purely to pick which question pool
-  // to serve — the frontend only ever sends the student's own profile grade
-  // (never lets them pick another), so nothing legitimate breaks by enforcing
-  // that server-side too. Without this, a tampered request could fetch a
-  // different grade's content and (via its quizToken) have it scored into
-  // that student's real QuizResult history.
-  private async assertOwnGrade(studentId: string, grade: number) {
+  /**
+   * Subjects taught in the student's own grade — the first screen of the Test
+   * section. Each carries the grade range it is taught in, so the next screen
+   * can offer any of those grades (a student may practise an earlier year).
+   */
+  async listSubjects(studentId: string, lang: Lang) {
     const student = await this.studentRepo.findGrade(studentId);
     if (!student) throw AppError.notFound("Student topilmadi");
-    if (student.grade !== grade) {
-      throw AppError.badRequest("So'ralgan sinf sizning profilingizdagi sinfga mos kelmaydi");
-    }
+    const subjects = await this.repo.findSubjectsWithTopics();
+    return {
+      grade: student.grade,
+      subjects: subjects
+        .filter((s) => s.minGrade <= student.grade && student.grade <= s.maxGrade)
+        .map((s) => ({
+          code: s.code,
+          name: pick(s.nameUz, s.nameRu, lang),
+          minGrade: s.minGrade,
+          maxGrade: s.maxGrade,
+          // Grades that actually have at least one topic.
+          grades: [...new Set(s.topics.map((t) => t.grade))].sort((x, y) => x - y),
+        })),
+    };
+  }
+
+  /** The yearly topics of one subject in one grade, with how many questions each has. */
+  async listTopics(subjectCode: string, grade: number, lang: Lang) {
+    const subject = await this.repo.findSubjectByCode(subjectCode);
+    if (!subject) throw AppError.notFound("Fan topilmadi");
+    const topics = await this.repo.findTopics(subject.id, grade);
+    return {
+      subject: { code: subject.code, name: pick(subject.nameUz, subject.nameRu, lang) },
+      grade,
+      topics: topics.map((t) => ({
+        id: t.id,
+        number: t.sortOrder,
+        name: pick(t.nameUz, t.nameRu, lang),
+        questionCount: t._count.questions,
+      })),
+    };
   }
 
   /** Returns questions WITHOUT correctIndex — the client never sees answers. */
-  async startQuiz(studentId: string, subjectId: string, grade: number, lang: Lang) {
-    await this.assertOwnGrade(studentId, grade);
-    const pool = await this.repo.findQuestionPool(subjectId, grade);
+  async startQuiz(studentId: string, topicId: string, lang: Lang) {
+    const topic = await this.repo.findTopic(topicId);
+    if (!topic) throw AppError.notFound("Mavzu topilmadi");
+    const { subjectId, grade } = topic;
+    const pool = await this.repo.findTopicQuestionPool(topicId);
     if (pool.length === 0) {
-      throw AppError.notFound("Bu fan va sinf uchun testlar hali qo'shilmagan");
+      throw AppError.notFound("Bu mavzu uchun savollar hali qo'shilmagan");
     }
 
     const recentAttempts = await this.repo.findRecentAttempts(studentId, pool.map((q) => q.id));
@@ -78,6 +107,8 @@ export class QuizService {
     const questions = weightedSampleWithoutReplacement(pool, weights, QUIZ_LENGTH);
 
     return {
+      topic: { id: topic.id, name: pick(topic.nameUz, topic.nameRu, lang), grade },
+      subject: { code: topic.subject.code, name: pick(topic.subject.nameUz, topic.subject.nameRu, lang) },
       questions: questions.map((q) => ({
         id: q.id,
         text: pick(q.text, q.textRu, lang),
@@ -87,7 +118,7 @@ export class QuizService {
       // attempt: which questions were served (for which subject/grade) and when
       // it really started — see submitQuiz.
       quizToken: signQuizToken(
-        { studentId, subjectId, grade, questionIds: questions.map((q) => q.id), startedAt: Date.now() },
+        { studentId, subjectId, grade, topicId, questionIds: questions.map((q) => q.id), startedAt: Date.now() },
         crypto.randomUUID()
       ),
     };
@@ -117,6 +148,7 @@ export class QuizService {
       throw AppError.forbidden("Bu test sizga tegishli emas");
     }
     const { subjectId, grade } = token;
+    const topicId = token.topicId ?? null;
 
     // Exactly the served questions, each answered once — a subset (e.g. the one
     // question the student already knows, for a free 100%) or extras are rejected.
@@ -140,18 +172,27 @@ export class QuizService {
     const score = Math.round((correctCount / answers.length) * 100);
     const level = levelFromScore(score);
 
+    // A student may practise an earlier (or later) year's topic — only a quiz
+    // at their own grade says anything about their current level in the subject.
+    const student = await this.studentRepo.findGrade(studentId);
+    const atOwnGrade = student?.grade === grade;
+
     // Result + subject-level + today's progress + per-question attempt history
     // (feeds the adaptive selection in startQuiz) must land together.
     const [result] = await prisma
       .$transaction([
         prisma.quizResult.create({
-          data: { studentId, subjectId, grade, score, level, attemptDate: new Date(), attemptId: token.jti },
+          data: { studentId, subjectId, grade, topicId, score, level, attemptDate: new Date(), attemptId: token.jti },
         }),
-        prisma.subjectLevel.upsert({
-          where: { studentId_subjectId: { studentId, subjectId } },
-          create: { studentId, subjectId, level, score, source: "quiz" },
-          update: { level, score, source: "quiz" },
-        }),
+        ...(atOwnGrade
+          ? [
+              prisma.subjectLevel.upsert({
+                where: { studentId_subjectId: { studentId, subjectId } },
+                create: { studentId, subjectId, level, score, source: "quiz" },
+                update: { level, score, source: "quiz" },
+              }),
+            ]
+          : []),
         prisma.progress.upsert({
           where: { studentId_date: { studentId, date: startOfToday() } },
           create: { studentId, date: startOfToday(), completedTasks: 1, studyMinutes: 0, scoreDelta: score },
@@ -215,6 +256,7 @@ export class QuizService {
         selectedIndex: a.selectedIndex,
         correctIndex: q.correctIndex,
         isCorrect: a.selectedIndex === q.correctIndex,
+        explanation: pick(q.explanation, q.explanationRu, lang) || null,
       };
     });
 
@@ -226,8 +268,64 @@ export class QuizService {
       resultId: result.id,
       newBadges: newBadges.map((b) => pick(b.nameUz, b.nameRu, lang)),
       review,
+      evaluation: evaluate(score, correctCount, answers.length, lang),
     };
   }
+}
+
+/**
+ * "Natijangizni baholash": the result on the school's 5-point scale plus a
+ * short, honest next step. Deterministic on purpose — no AI call needed to
+ * turn a percentage into a mark.
+ */
+export function evaluate(score: number, correct: number, total: number, lang: Lang) {
+  const wrong = total - correct;
+  if (score >= 86) {
+    return {
+      mark: 5,
+      title: pick("A'lo!", "Отлично!", lang),
+      message: pick(
+        `${total} ta savoldan ${correct} tasiga to'g'ri javob berdingiz. Bu mavzuni yaxshi bilasiz.`,
+        `Вы правильно ответили на ${correct} из ${total} вопросов. Вы хорошо знаете эту тему.`,
+        lang
+      ),
+      advice: pick("Keyingi mavzuga o'ting yoki qiyinroq sinf darajasini sinab ko'ring.", "Переходите к следующей теме или попробуйте уровень класса посложнее.", lang),
+    };
+  }
+  if (score >= 71) {
+    return {
+      mark: 4,
+      title: pick("Yaxshi!", "Хорошо!", lang),
+      message: pick(
+        `${total} ta savoldan ${correct} tasi to'g'ri. Bir oz takrorlasangiz, a'lo bo'ladi.`,
+        `Правильно ${correct} из ${total}. Немного повторения — и будет отлично.`,
+        lang
+      ),
+      advice: pick(`Xato qilgan ${wrong} ta savolingiz tushuntirishini o'qib, testni yana bir bor yeching.`, `Прочитайте объяснения к ${wrong} ошибкам и решите тест ещё раз.`, lang),
+    };
+  }
+  if (score >= 56) {
+    return {
+      mark: 3,
+      title: pick("Qoniqarli", "Удовлетворительно", lang),
+      message: pick(
+        `${total} ta savoldan ${correct} tasi to'g'ri. Mavzuning ayrim qismlarini qayta o'rganish kerak.`,
+        `Правильно ${correct} из ${total}. Некоторые части темы стоит повторить.`,
+        lang
+      ),
+      advice: pick("Darslikdagi shu mavzuni qayta o'qing, tushunmaganingizni AI maslahatchidan so'rang, so'ng testni qayta yeching.", "Перечитайте эту тему в учебнике, непонятное спросите у AI-советника, затем решите тест снова.", lang),
+    };
+  }
+  return {
+    mark: 2,
+    title: pick("Yana harakat qiling", "Нужно ещё постараться", lang),
+    message: pick(
+      `${total} ta savoldan ${correct} tasi to'g'ri. Bu mavzu hali qiyin — bu normal holat, o'rganib olsa bo'ladi.`,
+      `Правильно ${correct} из ${total}. Эта тема пока трудная — это нормально, её можно освоить.`,
+      lang
+    ),
+    advice: pick("Mavzuni boshidan o'rganing: avval tushuntirishlarni o'qing, keyin AI maslahatchiga savol bering va testni qayta yeching.", "Изучите тему с начала: прочитайте объяснения, задайте вопросы AI-советнику и решите тест снова.", lang),
+  };
 }
 
 function startOfToday(): Date {

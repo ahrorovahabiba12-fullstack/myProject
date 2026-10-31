@@ -2,8 +2,14 @@ import { z } from "zod";
 
 export const startQuizSchema = z.object({
   body: z.object({
-    subjectId: z.string().uuid(),
-    grade: z.number().int().min(1).max(11),
+    topicId: z.string().uuid(),
+  }),
+});
+
+export const listTopicsSchema = z.object({
+  query: z.object({
+    subject: z.string().min(1).max(40),
+    grade: z.coerce.number().int().min(1).max(11),
   }),
 });
 
