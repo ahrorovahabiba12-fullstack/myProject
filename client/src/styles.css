@@ -8,6 +8,7 @@
   --text-primary: #1a1530;
   --text-secondary: #635f77;
   --border-subtle: #ece9fb;
+  color-scheme: light dark;
 }
 
 .dark {
@@ -16,6 +17,7 @@
   --text-primary: #f4f2ff;
   --text-secondary: #a79fd1;
   --border-subtle: #2c2447;
+  color-scheme: dark;
 }
 
 body {
