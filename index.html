@@ -3,13 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Tell mobile browsers (Chrome, Samsung Internet) the app has its own
+         light and dark themes, so they don't force-darken the light theme. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f7f6fd" />
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
     <title>AI Career & Learning Advisor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-Crx-mlIZ.js"></script>
+    <script type="module" crossorigin src="/assets/index-DDng-POa.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-IMzpBpJw.js">
     <link rel="modulepreload" crossorigin href="/assets/charts-BKsbmd6Y.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-Dx6mUCsY.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-D-Epsx8j.css">
   </head>
   <body>
     <div id="root"></div>
