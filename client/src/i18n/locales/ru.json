@@ -282,7 +282,9 @@
     "district": "Район",
     "pickDistrict": "Выберите район / город",
     "pickRegionFirst": "Сначала выберите регион",
-    "searchOnMap": "Центры рядом: {{district}} на карте"
+    "searchOnMap": "Центры рядом: {{district}} на карте",
+    "noUniversitiesInRegion": "В этом регионе вузов по этой профессии не найдено.",
+    "showAllRegions": "Показать вузы во всех регионах"
   },
   "universities": {
     "title": "Рекомендованные университеты",

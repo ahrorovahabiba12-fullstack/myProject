@@ -139,8 +139,49 @@ function DetailBody({ d }: { d: Details }) {
       {d.universities.length === 0 ? (
         <EmptyState icon="🎓" title={t("career.noUniversities")} />
       ) : (
+        <UniversityList d={d} />
+      )}
+    </>
+  );
+}
+
+/** Universities for this career, filtered by region (the student's own region first). */
+function UniversityList({ d }: { d: Details }) {
+  const { t, i18n } = useTranslation();
+  const ru = i18n.language === "ru";
+  const count = (code: string) => d.universities.filter((u) => u.regionCode === code).length;
+  const [region, setRegion] = useState(d.studentRegion && count(d.studentRegion) > 0 ? d.studentRegion : "");
+  const shown = region ? d.universities.filter((u) => u.regionCode === region) : d.universities;
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <MapPin size={16} className="text-brand-600" aria-hidden="true" />
+        <select
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+          className="text-sm rounded-full px-3 py-1.5 border border-[var(--border-subtle)] bg-[var(--bg-card)]"
+          aria-label={t("career.region")}
+        >
+          <option value="">
+            {t("career.allRegions")} ({d.universities.length})
+          </option>
+          {REGIONS.map((r) => (
+            <option key={r.code} value={r.code}>
+              {ru ? r.nameRu : r.nameUz} ({count(r.code)})
+            </option>
+          ))}
+        </select>
+      </div>
+      {shown.length === 0 ? (
+        <Card className="text-sm">
+          <p className="mb-2">{t("career.noUniversitiesInRegion")}</p>
+          <button onClick={() => setRegion("")} className="font-semibold text-brand-600 hover:underline">
+            {t("career.showAllRegions")} →
+          </button>
+        </Card>
+      ) : (
         <div className="grid gap-3">
-          {d.universities.map((u) => (
+          {shown.map((u) => (
             <UniversityCard key={u.id} u={u} d={d} />
           ))}
         </div>

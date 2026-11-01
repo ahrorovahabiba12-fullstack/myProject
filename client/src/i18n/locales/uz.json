@@ -282,7 +282,9 @@
     "district": "Tuman",
     "pickDistrict": "Tuman / shaharni tanlang",
     "pickRegionFirst": "Avval viloyatni tanlang",
-    "searchOnMap": "Xaritada qidirish: {{district}}"
+    "searchOnMap": "Xaritada qidirish: {{district}}",
+    "noUniversitiesInRegion": "Bu hududda ushbu kasb bo'yicha universitet topilmadi.",
+    "showAllRegions": "Barcha hududlardagi universitetlarni ko'rish"
   },
   "universities": {
     "title": "Tavsiya etilgan universitetlar",
