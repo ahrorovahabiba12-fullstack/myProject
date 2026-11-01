@@ -8,6 +8,7 @@ import { pick } from "../utils/localize";
 import { REGIONS } from "../constants/regions";
 import { CAREER_TEST, CREATIVE_EXAM, PHYSICAL_EXAM, RIASEC_TYPES, Riasec } from "../constants/careerTest";
 import { CAREER_META } from "../constants/careerMeta";
+import { CAREER_DESC_RU } from "../constants/careerDescRu";
 import { MIN_CAREER_GRADE } from "./careerService";
 
 const TYPES = Object.keys(RIASEC_TYPES) as Riasec[];
@@ -134,7 +135,7 @@ export class CareerChoiceService {
       careers: ranked.map(({ c, matchScore }) => ({
         code: c.code,
         name: pick(c.nameUz, c.nameRu, lang),
-        description: c.description,
+        description: pick(c.description, CAREER_DESC_RU[c.code] ?? c.description, lang),
         matchScore: Math.round(matchScore * 100) / 100,
         types: c.riasec.map((t) => this.typeInfo(t as Riasec, lang)),
         examSubjects: c.examSubjects.map((s) => subjectName.get(s) ?? s),
@@ -190,7 +191,7 @@ export class CareerChoiceService {
     return {
       code: career.code,
       name: pick(career.nameUz, career.nameRu, lang),
-      description: career.description,
+      description: pick(career.description, CAREER_DESC_RU[career.code] ?? career.description, lang),
       types: career.riasec.map((t) => this.typeInfo(t as Riasec, lang)),
       exam: { compulsory, specialty: exam, maxScore: DTM_BLOCKS.max, extra: extraExam },
       universities,

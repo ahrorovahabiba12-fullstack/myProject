@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Home, BookOpenCheck, Compass, Trophy, Sparkles, User } from "lucide-react";
+import { Home, BookOpenCheck, Compass, Trophy, Sparkles, User, FileText } from "lucide-react";
 import clsx from "clsx";
 
 export function MobileBottomNav({ careerVisible }: { careerVisible: boolean }) {
@@ -11,6 +11,7 @@ export function MobileBottomNav({ careerVisible }: { careerVisible: boolean }) {
     careerVisible
       ? { to: "/career", icon: Compass, label: t("mobileNav.career") }
       : { to: "/achievements", icon: Trophy, label: t("mobileNav.achievements") },
+    ...(careerVisible ? [{ to: "/dtm", icon: FileText, label: t("mobileNav.dtm") }] : []),
     { to: "/chat", icon: Sparkles, label: t("mobileNav.ai") },
     { to: "/profile", icon: User, label: t("mobileNav.profile") },
   ];
@@ -23,7 +24,7 @@ export function MobileBottomNav({ careerVisible }: { careerVisible: boolean }) {
           to={item.to}
           className={({ isActive }) =>
             clsx(
-              "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-[11px] font-semibold min-w-[56px] min-h-[48px] justify-center transition-colors",
+              "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-[11px] font-semibold min-w-[52px] min-h-[48px] justify-center transition-colors",
               isActive ? "text-brand-600 bg-brand-50 dark:bg-brand-900/30" : "text-[var(--text-secondary)]"
             )
           }

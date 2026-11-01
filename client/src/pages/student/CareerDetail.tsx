@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { ChevronLeft, ExternalLink, GraduationCap, MapPin, School, Target, ClipboardList, Map as MapIcon } from "lucide-react";
 import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { REGIONS } from "../../constants/regions";
+import { DISTRICTS } from "../../constants/districts";
 import { careerApi, studentApi, CareerDetails as Details } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 
@@ -187,10 +188,21 @@ function UniversityCard({ u, d }: { u: Details["universities"][number]; d: Detai
   );
 }
 
+/** Google Maps search for study centres of a subject in the chosen district. */
+function mapsUrl(subject: string, district: string, region: string, ru: boolean) {
+  const r = REGIONS.find((x) => x.code === region);
+  const d = DISTRICTS[region]?.find((x) => x.uz === district);
+  const q = ru
+    ? `учебный центр ${subject} ${d?.ru ?? district} ${r?.nameRu ?? ""}`
+    : `o'quv markazi ${subject} ${district} ${r?.nameUz ?? ""}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
 function StudyCenters({ subjects, defaultRegion }: { subjects: Details["exam"]["specialty"]; defaultRegion: string | null }) {
   const { t, i18n } = useTranslation();
   const [subject, setSubject] = useState(subjects[0]?.code ?? "");
   const [region, setRegion] = useState(defaultRegion ?? "");
+  const [district, setDistrict] = useState("");
   const centers = useQuery({
     queryKey: ["study-centers", subject, region],
     queryFn: () => careerApi.studyCenters(subject, region || null),
@@ -215,7 +227,10 @@ function StudyCenters({ subjects, defaultRegion }: { subjects: Details["exam"]["
         ))}
         <select
           value={region}
-          onChange={(e) => setRegion(e.target.value)}
+          onChange={(e) => {
+            setRegion(e.target.value);
+            setDistrict("");
+          }}
           className="text-sm rounded-full px-3 py-1 border border-[var(--border-subtle)] bg-[var(--bg-card)]"
           aria-label={t("career.region")}
         >
@@ -226,7 +241,32 @@ function StudyCenters({ subjects, defaultRegion }: { subjects: Details["exam"]["
             </option>
           ))}
         </select>
+        <select
+          value={district}
+          onChange={(e) => setDistrict(e.target.value)}
+          disabled={!region}
+          className="text-sm rounded-full px-3 py-1 border border-[var(--border-subtle)] bg-[var(--bg-card)] disabled:opacity-50"
+          aria-label={t("career.district")}
+        >
+          <option value="">{region ? t("career.pickDistrict") : t("career.pickRegionFirst")}</option>
+          {(DISTRICTS[region] ?? []).map((x) => (
+            <option key={x.uz} value={x.uz}>
+              {ru ? x.ru : x.uz}
+            </option>
+          ))}
+        </select>
       </div>
+      {district && (
+        <a
+          href={mapsUrl(subjects.find((s) => s.code === subject)?.name ?? "", district, region, ru)}
+          target="_blank"
+          rel="noreferrer"
+          className="mb-3 inline-flex items-center gap-1 text-sm font-semibold rounded-lg px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100"
+        >
+          <MapPin size={14} /> {t("career.searchOnMap", { district: ru ? DISTRICTS[region]?.find((x) => x.uz === district)?.ru : district })}
+          <ExternalLink size={13} />
+        </a>
+      )}
       {centers.isLoading ? (
         <Skeleton className="h-16" />
       ) : (centers.data ?? []).length === 0 ? (

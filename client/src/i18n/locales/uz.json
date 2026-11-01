@@ -91,7 +91,9 @@
     "actionChatTitle": "AI maslahatchi",
     "actionChatDesc": "Savolingizni yozing, tushuntirib beraman",
     "actionProgressTitle": "Mening natijalarim",
-    "actionProgressDesc": "Qaysi fanda kuchli ekaningizni ko'ring"
+    "actionProgressDesc": "Qaysi fanda kuchli ekaningizni ko'ring",
+    "actionDtmTitle": "DTM testlari",
+    "actionDtmDesc": "Abituriyent testiga o'xshash mashq"
   },
   "nav_sidebar": {
     "dashboard": "Bosh sahifa",
@@ -169,7 +171,9 @@
     "evaluateButton": "Natijangizni baholash",
     "markLabel": "baho",
     "retryTopic": "Qayta yechish",
-    "otherTopic": "Boshqa mavzu"
+    "otherTopic": "Boshqa mavzu",
+    "dtmBannerTitle": "Namunaviy DTM testlari",
+    "dtmBannerDesc": "Oliygohga kirish imtihoni formatida o'zingizni sinab ko'ring"
   },
   "progress": {
     "title": "Progress",
@@ -274,7 +278,11 @@
     "nationwide": "O'zbekiston bo'ylab / onlayn",
     "noCenters": "Bu fan va hudud bo'yicha tasdiqlangan o'quv markazi ma'lumoti hozircha yo'q.",
     "source": "Manba",
-    "centersNote": "Ro'yxatga faqat rasmiy manbada e'lon qilingan markazlar kiritilgan. Markazga yozilishdan oldin uning litsenziyasini va manzilini tekshiring."
+    "centersNote": "Ro'yxatga faqat rasmiy manbada e'lon qilingan markazlar kiritilgan. Markazga yozilishdan oldin uning litsenziyasini va manzilini tekshiring.",
+    "district": "Tuman",
+    "pickDistrict": "Tuman / shaharni tanlang",
+    "pickRegionFirst": "Avval viloyatni tanlang",
+    "searchOnMap": "Xaritada qidirish: {{district}}"
   },
   "universities": {
     "title": "Tavsiya etilgan universitetlar",
@@ -402,7 +410,8 @@
     "career": "Kasb",
     "achievements": "Yutuqlar",
     "ai": "AI",
-    "profile": "Profil"
+    "profile": "Profil",
+    "dtm": "DTM"
   },
   "dtm": {
     "title": "Namunaviy DTM testlari",

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useOutletContext } from "react-router-dom";
-import { Sparkles, Info, Sunrise, Check, Flame, Star, BookOpenCheck, Trophy, Compass, MessageCircle, TrendingUp, Lock, ChevronRight } from "lucide-react";
+import { Sparkles, Info, Sunrise, Check, Flame, Star, BookOpenCheck, Trophy, Compass, MessageCircle, TrendingUp, Lock, ChevronRight, FileText } from "lucide-react";
 import clsx from "clsx";
 import { studentApi, recommendationApi, dailyCoachApi, DashboardSummary } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
@@ -45,13 +45,14 @@ function StatPill({ icon, iconBg, value, label }: { icon: React.ReactNode; iconB
   );
 }
 
-type Tone = "violet" | "amber" | "sky" | "emerald";
+type Tone = "violet" | "amber" | "sky" | "emerald" | "rose";
 
 const TONES: Record<Tone, { tile: string; icon: string }> = {
   violet: { tile: "from-brand-500 to-accentBlue text-white", icon: "bg-white/20 text-white" },
   amber: { tile: "from-amber-400 to-orange-500 text-white", icon: "bg-white/20 text-white" },
   sky: { tile: "from-sky-400 to-cyan-500 text-white", icon: "bg-white/20 text-white" },
   emerald: { tile: "from-emerald-400 to-teal-500 text-white", icon: "bg-white/20 text-white" },
+  rose: { tile: "from-rose-400 to-pink-500 text-white", icon: "bg-white/20 text-white" },
 };
 
 /** A big, colourful, tappable tile — the main way into each section, sized
@@ -193,7 +194,7 @@ export default function Dashboard() {
         <h2 id="quick-actions" className="font-bold text-lg mb-3">
           {t("dashboard.quickActionsTitle")}
         </h2>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+        <div className={clsx("grid grid-cols-2 gap-3 sm:gap-4", careerVisible ? "md:grid-cols-3 xl:grid-cols-5" : "xl:grid-cols-4")}>
           <ActionTile
             to="/quiz"
             tone="violet"
@@ -209,6 +210,15 @@ export default function Dashboard() {
             description={careerVisible ? t("dashboard.actionCareerDesc") : t("dashboard.actionCareerLocked")}
             locked={!careerVisible}
           />
+          {careerVisible && (
+            <ActionTile
+              to="/dtm"
+              tone="rose"
+              icon={<FileText size={24} />}
+              title={t("dashboard.actionDtmTitle")}
+              description={t("dashboard.actionDtmDesc")}
+            />
+          )}
           <ActionTile
             to="/chat"
             tone="sky"

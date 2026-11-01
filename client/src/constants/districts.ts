@@ -1,0 +1,110 @@
+// Districts (tumanlar) and regional cities of Uzbekistan, by region code from
+// constants/regions.ts. Used to narrow the "o'quv markazi" search.
+type D = { uz: string; ru: string };
+const d = (uz: string, ru: string): D => ({ uz, ru });
+
+export const DISTRICTS: Record<string, D[]> = {
+  TASHKENT_CITY: [
+    d("Bektemir", "Бектемир"), d("Chilonzor", "Чиланзар"), d("Mirobod", "Мирабад"), d("Mirzo Ulug'bek", "Мирзо-Улугбек"),
+    d("Olmazor", "Алмазар"), d("Sergeli", "Сергели"), d("Shayxontohur", "Шайхантахур"), d("Uchtepa", "Учтепа"),
+    d("Yakkasaroy", "Яккасарай"), d("Yashnobod", "Яшнабад"), d("Yangihayot", "Янгихаёт"), d("Yunusobod", "Юнусабад"),
+  ],
+  TASHKENT_REGION: [
+    d("Nurafshon shahri", "город Нурафшон"), d("Angren shahri", "город Ангрен"), d("Bekobod shahri", "город Бекабад"),
+    d("Chirchiq shahri", "город Чирчик"), d("Olmaliq shahri", "город Алмалык"), d("Ohangaron shahri", "город Ахангаран"),
+    d("Yangiyo'l shahri", "город Янгиюль"), d("Bekobod tumani", "Бекабадский район"), d("Bo'stonliq tumani", "Бостанлыкский район"),
+    d("Bo'ka tumani", "Букинский район"), d("Chinoz tumani", "Чиназский район"), d("Qibray tumani", "Кибрайский район"),
+    d("Ohangaron tumani", "Ахангаранский район"), d("Oqqo'rg'on tumani", "Аккурганский район"), d("Parkent tumani", "Паркентский район"),
+    d("Piskent tumani", "Пскентский район"), d("Quyichirchiq tumani", "Куйичирчикский район"), d("O'rtachirchiq tumani", "Уртачирчикский район"),
+    d("Yangiyo'l tumani", "Янгиюльский район"), d("Yuqorichirchiq tumani", "Юкоричирчикский район"), d("Zangiota tumani", "Зангиатинский район"),
+    d("Toshkent tumani", "Ташкентский район"),
+  ],
+  ANDIJAN: [
+    d("Andijon shahri", "город Андижан"), d("Xonobod shahri", "город Ханабад"), d("Andijon tumani", "Андижанский район"),
+    d("Asaka tumani", "Асакинский район"), d("Baliqchi tumani", "Балыкчинский район"), d("Bo'z tumani", "Бозский район"),
+    d("Buloqboshi tumani", "Булакбашинский район"), d("Izboskan tumani", "Избасканский район"), d("Jalaquduq tumani", "Джалакудукский район"),
+    d("Xo'jaobod tumani", "Ходжаабадский район"), d("Qo'rg'ontepa tumani", "Кургантепинский район"), d("Marhamat tumani", "Мархаматский район"),
+    d("Oltinko'l tumani", "Алтынкульский район"), d("Paxtaobod tumani", "Пахтаабадский район"), d("Shahrixon tumani", "Шахриханский район"),
+    d("Ulug'nor tumani", "Улугнорский район"),
+  ],
+  FERGANA: [
+    d("Farg'ona shahri", "город Фергана"), d("Marg'ilon shahri", "город Маргилан"), d("Qo'qon shahri", "город Коканд"),
+    d("Quvasoy shahri", "город Кувасай"), d("Beshariq tumani", "Бешарыкский район"), d("Bog'dod tumani", "Багдадский район"),
+    d("Buvayda tumani", "Бувайдинский район"), d("Dang'ara tumani", "Дангаринский район"), d("Farg'ona tumani", "Ферганский район"),
+    d("Furqat tumani", "Фуркатский район"), d("Qo'shtepa tumani", "Куштепинский район"), d("Quva tumani", "Кувинский район"),
+    d("Rishton tumani", "Риштанский район"), d("So'x tumani", "Сохский район"), d("Toshloq tumani", "Ташлакский район"),
+    d("Uchko'prik tumani", "Учкуприкский район"), d("O'zbekiston tumani", "Узбекистанский район"), d("Oltiariq tumani", "Алтыарыкский район"),
+    d("Yozyovon tumani", "Язъяванский район"),
+  ],
+  NAMANGAN: [
+    d("Namangan shahri", "город Наманган"), d("Chortoq tumani", "Чартакский район"), d("Chust tumani", "Чустский район"),
+    d("Kosonsoy tumani", "Касансайский район"), d("Mingbuloq tumani", "Мингбулакский район"), d("Namangan tumani", "Наманганский район"),
+    d("Norin tumani", "Нарынский район"), d("Pop tumani", "Папский район"), d("To'raqo'rg'on tumani", "Туракурганский район"),
+    d("Uchqo'rg'on tumani", "Учкурганский район"), d("Uychi tumani", "Уйчинский район"), d("Yangiqo'rg'on tumani", "Янгикурганский район"),
+    d("Davlatobod tumani", "Давлатабадский район"),
+  ],
+  SAMARKAND: [
+    d("Samarqand shahri", "город Самарканд"), d("Kattaqo'rg'on shahri", "город Каттакурган"), d("Bulung'ur tumani", "Булунгурский район"),
+    d("Ishtixon tumani", "Иштыханский район"), d("Jomboy tumani", "Джамбайский район"), d("Kattaqo'rg'on tumani", "Каттакурганский район"),
+    d("Qo'shrabot tumani", "Кошрабадский район"), d("Narpay tumani", "Нарпайский район"), d("Nurobod tumani", "Нурабадский район"),
+    d("Oqdaryo tumani", "Акдарьинский район"), d("Pastdarg'om tumani", "Пастдаргомский район"), d("Paxtachi tumani", "Пахтачийский район"),
+    d("Payariq tumani", "Пайарыкский район"), d("Samarqand tumani", "Самаркандский район"), d("Toyloq tumani", "Тайлакский район"),
+    d("Urgut tumani", "Ургутский район"),
+  ],
+  BUKHARA: [
+    d("Buxoro shahri", "город Бухара"), d("Kogon shahri", "город Каган"), d("Olot tumani", "Алатский район"),
+    d("Buxoro tumani", "Бухарский район"), d("G'ijduvon tumani", "Гиждуванский район"), d("Jondor tumani", "Жондорский район"),
+    d("Kogon tumani", "Каганский район"), d("Qorako'l tumani", "Каракульский район"), d("Qorovulbozor tumani", "Караулбазарский район"),
+    d("Peshku tumani", "Пешкунский район"), d("Romitan tumani", "Ромитанский район"), d("Shofirkon tumani", "Шафирканский район"),
+    d("Vobkent tumani", "Вабкентский район"),
+  ],
+  NAVOI: [
+    d("Navoiy shahri", "город Навои"), d("Zarafshon shahri", "город Зарафшан"), d("G'ozg'on shahri", "город Газган"),
+    d("Karmana tumani", "Карманинский район"), d("Konimex tumani", "Канимехский район"), d("Navbahor tumani", "Навбахорский район"),
+    d("Nurota tumani", "Нуратинский район"), d("Qiziltepa tumani", "Кызылтепинский район"), d("Tomdi tumani", "Тамдынский район"),
+    d("Uchquduq tumani", "Учкудукский район"), d("Xatirchi tumani", "Хатырчинский район"),
+  ],
+  KASHKADARYA: [
+    d("Qarshi shahri", "город Карши"), d("Shahrisabz shahri", "город Шахрисабз"), d("Chiroqchi tumani", "Чиракчинский район"),
+    d("Dehqonobod tumani", "Дехканабадский район"), d("G'uzor tumani", "Гузарский район"), d("Qamashi tumani", "Камашинский район"),
+    d("Qarshi tumani", "Каршинский район"), d("Kasbi tumani", "Касбийский район"), d("Kitob tumani", "Китабский район"),
+    d("Koson tumani", "Касанский район"), d("Mirishkor tumani", "Миришкорский район"), d("Muborak tumani", "Мубарекский район"),
+    d("Nishon tumani", "Нишанский район"), d("Shahrisabz tumani", "Шахрисабзский район"), d("Yakkabog' tumani", "Яккабагский район"),
+    d("Ko'kdala tumani", "Кукдалинский район"),
+  ],
+  SURKHANDARYA: [
+    d("Termiz shahri", "город Термез"), d("Angor tumani", "Ангорский район"), d("Bandixon tumani", "Бандиханский район"),
+    d("Boysun tumani", "Байсунский район"), d("Denov tumani", "Денауский район"), d("Jarqo'rg'on tumani", "Джаркурганский район"),
+    d("Qiziriq tumani", "Кизирикский район"), d("Qumqo'rg'on tumani", "Кумкурганский район"), d("Muzrabot tumani", "Музрабадский район"),
+    d("Oltinsoy tumani", "Алтынсайский район"), d("Sariosiyo tumani", "Сариасийский район"), d("Sherobod tumani", "Шерабадский район"),
+    d("Sho'rchi tumani", "Шурчинский район"), d("Termiz tumani", "Термезский район"), d("Uzun tumani", "Узунский район"),
+  ],
+  JIZZAKH: [
+    d("Jizzax shahri", "город Джизак"), d("Arnasoy tumani", "Арнасайский район"), d("Baxmal tumani", "Бахмальский район"),
+    d("Do'stlik tumani", "Дустликский район"), d("Forish tumani", "Фаришский район"), d("G'allaorol tumani", "Галляаральский район"),
+    d("Sharof Rashidov tumani", "Шараф-Рашидовский район"), d("Mirzacho'l tumani", "Мирзачульский район"), d("Paxtakor tumani", "Пахтакорский район"),
+    d("Yangiobod tumani", "Янгиабадский район"), d("Zafarobod tumani", "Зафарабадский район"), d("Zarbdor tumani", "Зарбдарский район"),
+    d("Zomin tumani", "Зааминский район"),
+  ],
+  SYRDARYA: [
+    d("Guliston shahri", "город Гулистан"), d("Shirin shahri", "город Ширин"), d("Yangiyer shahri", "город Янгиер"),
+    d("Boyovut tumani", "Баяутский район"), d("Guliston tumani", "Гулистанский район"), d("Mirzaobod tumani", "Мирзаабадский район"),
+    d("Oqoltin tumani", "Акалтынский район"), d("Sardoba tumani", "Сардобинский район"), d("Sayxunobod tumani", "Сайхунабадский район"),
+    d("Sirdaryo tumani", "Сырдарьинский район"), d("Xovos tumani", "Хавастский район"),
+  ],
+  KHOREZM: [
+    d("Urganch shahri", "город Ургенч"), d("Xiva shahri", "город Хива"), d("Bog'ot tumani", "Багатский район"),
+    d("Gurlan tumani", "Гурленский район"), d("Xonqa tumani", "Ханкинский район"), d("Hazorasp tumani", "Хазараспский район"),
+    d("Xiva tumani", "Хивинский район"), d("Qo'shko'pir tumani", "Кошкупырский район"), d("Shovot tumani", "Шаватский район"),
+    d("Urganch tumani", "Ургенчский район"), d("Yangiariq tumani", "Янгиарыкский район"), d("Yangibozor tumani", "Янгибазарский район"),
+    d("Tuproqqal'a tumani", "Тупроккалинский район"),
+  ],
+  KARAKALPAKSTAN: [
+    d("Nukus shahri", "город Нукус"), d("Amudaryo tumani", "Амударьинский район"), d("Beruniy tumani", "Берунийский район"),
+    d("Bo'zatov tumani", "Бозатауский район"), d("Chimboy tumani", "Чимбайский район"), d("Ellikqal'a tumani", "Элликкалинский район"),
+    d("Kegeyli tumani", "Кегейлийский район"), d("Mo'ynoq tumani", "Муйнакский район"), d("Nukus tumani", "Нукусский район"),
+    d("Qanliko'l tumani", "Канлыкульский район"), d("Qo'ng'irot tumani", "Кунградский район"), d("Qorao'zak tumani", "Караузякский район"),
+    d("Shumanay tumani", "Шуманайский район"), d("Taxtako'pir tumani", "Тахтакупырский район"), d("To'rtko'l tumani", "Турткульский район"),
+    d("Xo'jayli tumani", "Ходжейлийский район"), d("Taxiatosh tumani", "Тахиаташский район"),
+  ],
+};

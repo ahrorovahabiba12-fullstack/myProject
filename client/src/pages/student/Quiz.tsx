@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen } from "lucide-react";
 import clsx from "clsx";
+import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
@@ -79,6 +80,19 @@ function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
             </button>
           ))}
         </div>
+      )}
+      {subjects.data && subjects.data.grade >= MIN_CAREER_GRADE && (
+        <Link
+          to="/dtm"
+          className="mt-5 flex items-center gap-4 rounded-card p-4 sm:p-5 text-white bg-gradient-to-br from-rose-400 to-pink-500 shadow-card hover:-translate-y-0.5 transition-transform"
+        >
+          <span className="text-3xl" aria-hidden="true">📝</span>
+          <div className="flex-1">
+            <p className="font-extrabold text-lg">{t("quiz.dtmBannerTitle")}</p>
+            <p className="text-sm text-white/90">{t("quiz.dtmBannerDesc")}</p>
+          </div>
+          <ChevronRight size={22} aria-hidden="true" />
+        </Link>
       )}
     </div>
   );
