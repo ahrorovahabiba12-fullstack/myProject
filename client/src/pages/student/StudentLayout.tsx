@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { studentApi } from "../../lib/api";
-import { StudentSidebar } from "../../components/layout/StudentSidebar";
+import { MobileMenu, StudentSidebar } from "../../components/layout/StudentSidebar";
 import { MobileBottomNav } from "../../components/layout/MobileBottomNav";
 import { Topbar } from "../../components/layout/Topbar";
 import { Skeleton } from "../../components/ui/primitives";
@@ -16,7 +16,11 @@ export default function StudentLayout() {
         {isLoading ? (
           <Skeleton className="h-9 w-64 mb-6" />
         ) : (
-          <Topbar streakDays={data?.streakDays ?? 0} points={data?.points ?? 0} />
+          <Topbar
+            streakDays={data?.streakDays ?? 0}
+            points={data?.points ?? 0}
+            menu={<MobileMenu careerVisible={data?.careerModuleVisible ?? false} grade={data?.grade} />}
+          />
         )}
         <Outlet context={{ dashboard: data }} />
       </div>

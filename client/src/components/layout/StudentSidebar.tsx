@@ -1,10 +1,62 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, Sparkles, BookOpenCheck, TrendingUp, Trophy, Compass, User, Settings, FileText } from "lucide-react";
+import { LayoutDashboard, Sparkles, BookOpenCheck, TrendingUp, Trophy, Compass, User, Settings, FileText, Menu, X } from "lucide-react";
 import clsx from "clsx";
 import { LogoIcon } from "../icons/LogoIcon";
 
-export function StudentSidebar({ careerVisible, grade }: { careerVisible: boolean; grade?: number }) {
+type Props = { careerVisible: boolean; grade?: number };
+
+export function StudentSidebar(props: Props) {
+  return (
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-0 h-screen overflow-y-auto bg-[#1a1533] text-white px-4 py-6 gap-1">
+      <SidebarContent {...props} />
+    </aside>
+  );
+}
+
+/** Mobile: a ☰ button that opens the same menu as a slide-in drawer. */
+export function MobileMenu(props: Props) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        aria-label={t("nav_sidebar.openMenu")}
+        aria-expanded={open}
+        className="lg:hidden mr-auto w-10 h-10 rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[var(--bg-card)] flex items-center justify-center"
+      >
+        <Menu size={20} />
+      </button>
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] flex flex-col overflow-y-auto bg-[#1a1533] text-white px-4 py-6 gap-1 shadow-2xl animate-slide-in">
+            <button
+              onClick={() => setOpen(false)}
+              aria-label={t("nav_sidebar.closeMenu")}
+              className="absolute right-3 top-6 w-9 h-9 rounded-lg hover:bg-white/10 flex items-center justify-center"
+            >
+              <X size={20} />
+            </button>
+            <SidebarContent {...props} />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SidebarContent({ careerVisible, grade }: Props) {
   const { t } = useTranslation();
 
   const items = [
@@ -24,7 +76,7 @@ export function StudentSidebar({ careerVisible, grade }: { careerVisible: boolea
   ];
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-0 h-screen overflow-y-auto bg-[#1a1533] text-white px-4 py-6 gap-1">
+    <>
       <div className="flex items-center gap-2.5 font-bold text-lg px-2 mb-6">
         <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-lg shadow-brand-900/40">
           <LogoIcon size={20} />
@@ -54,6 +106,6 @@ export function StudentSidebar({ careerVisible, grade }: { careerVisible: boolea
           </p>
         </div>
       )}
-    </aside>
+    </>
   );
 }

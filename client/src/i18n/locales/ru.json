@@ -106,7 +106,9 @@
     "settings": "Настройки",
     "adminDashboard": "Панель управления",
     "adminUsers": "Пользователи",
-    "dtm": "Тесты DTM"
+    "dtm": "Тесты DTM",
+    "openMenu": "Открыть меню",
+    "closeMenu": "Закрыть меню"
   },
   "settings": {
     "title": "Настройки",

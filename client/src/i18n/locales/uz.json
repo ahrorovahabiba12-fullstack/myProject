@@ -106,7 +106,9 @@
     "settings": "Sozlamalar",
     "adminDashboard": "Boshqaruv paneli",
     "adminUsers": "Foydalanuvchilar",
-    "dtm": "DTM testlari"
+    "dtm": "DTM testlari",
+    "openMenu": "Menyuni ochish",
+    "closeMenu": "Menyuni yopish"
   },
   "settings": {
     "title": "Sozlamalar",
