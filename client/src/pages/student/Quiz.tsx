@@ -9,18 +9,28 @@ import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 
-const SUBJECT_STYLE: Record<string, { emoji: string; tile: string }> = {
-  MATH: { emoji: "🔢", tile: "from-brand-500 to-accentBlue" },
-  MOTHER_LANG: { emoji: "📖", tile: "from-emerald-400 to-teal-500" },
-  ENGLISH: { emoji: "🇬🇧", tile: "from-sky-400 to-blue-500" },
-  RUSSIAN: { emoji: "🔤", tile: "from-rose-400 to-pink-500" },
-  PHYSICS: { emoji: "⚛️", tile: "from-indigo-400 to-violet-500" },
-  CHEMISTRY: { emoji: "🧪", tile: "from-amber-400 to-orange-500" },
-  BIOLOGY: { emoji: "🌿", tile: "from-lime-400 to-green-500" },
-  INFORMATICS: { emoji: "💻", tile: "from-cyan-400 to-sky-500" },
-  HISTORY: { emoji: "🏛️", tile: "from-yellow-400 to-amber-500" },
+// Subject tiles: white card, a soft pastel "blob" behind a big icon, name and
+// an arrow chip below (Habiba's design).
+const SUBJECT_STYLE: Record<string, { emoji: string; blob: string }> = {
+  MATH: { emoji: "🧮", blob: "bg-violet-200/70 dark:bg-violet-500/25" },
+  MOTHER_LANG: { emoji: "📖", blob: "bg-lime-200/70 dark:bg-lime-500/25" },
+  ENGLISH: { emoji: "🌍", blob: "bg-sky-200/70 dark:bg-sky-500/25" },
+  RUSSIAN: { emoji: "📚", blob: "bg-rose-200/70 dark:bg-rose-500/25" },
+  PHYSICS: { emoji: "⚛️", blob: "bg-emerald-200/70 dark:bg-emerald-500/25" },
+  CHEMISTRY: { emoji: "🧪", blob: "bg-amber-200/70 dark:bg-amber-500/25" },
+  BIOLOGY: { emoji: "🌱", blob: "bg-indigo-200/60 dark:bg-indigo-500/25" },
+  INFORMATICS: { emoji: "💻", blob: "bg-blue-200/70 dark:bg-blue-500/25" },
+  HISTORY: { emoji: "🏛️", blob: "bg-orange-200/70 dark:bg-orange-500/25" },
 };
-const styleFor = (code: string) => SUBJECT_STYLE[code] ?? { emoji: "📘", tile: "from-brand-500 to-accentBlue" };
+const styleFor = (code: string) => SUBJECT_STYLE[code] ?? { emoji: "📘", blob: "bg-brand-200/70 dark:bg-brand-500/25" };
+// Irregular rounded shapes so the blobs don't all look the same.
+const BLOB_SHAPES = [
+  "rounded-[38%_62%_55%_45%/45%_40%_60%_55%] -rotate-6",
+  "rounded-[60%_40%_45%_55%/55%_60%_40%_45%] rotate-3",
+  "rounded-full",
+  "rounded-[45%_55%_60%_40%/60%_45%_55%_40%] rotate-6",
+  "rounded-[55%_45%_40%_60%/40%_55%_45%_60%] -rotate-3",
+];
 
 function StepHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
   const { t } = useTranslation();
@@ -63,20 +73,27 @@ function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
         <EmptyState icon="📚" title={t("quiz.noSubjects")} />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-          {subjects.data.subjects.map((s) => (
+          {subjects.data.subjects.map((s, i) => (
             <button
               key={s.code}
               onClick={() => onPick(s)}
-              className={clsx(
-                "relative overflow-hidden text-left rounded-card p-4 sm:p-5 min-h-[112px] text-white bg-gradient-to-br shadow-card transition-transform hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300",
-                styleFor(s.code).tile
-              )}
+              className="group text-left rounded-3xl p-4 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm transition hover:shadow-card hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
             >
-              <div className="absolute -right-5 -bottom-5 w-24 h-24 rounded-full bg-white/10" aria-hidden="true" />
-              <span className="text-3xl" aria-hidden="true">
-                {styleFor(s.code).emoji}
-              </span>
-              <p className="font-extrabold text-lg mt-2">{s.name}</p>
+              <div className="relative h-24 sm:h-28 flex items-center justify-center mb-3">
+                <div
+                  className={clsx("absolute inset-x-3 inset-y-0 sm:inset-x-6", styleFor(s.code).blob, BLOB_SHAPES[i % BLOB_SHAPES.length])}
+                  aria-hidden="true"
+                />
+                <span className="relative text-5xl sm:text-6xl drop-shadow-sm transition-transform group-hover:scale-110" aria-hidden="true">
+                  {styleFor(s.code).emoji}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-extrabold text-base sm:text-lg">{s.name}</p>
+                <span className="w-8 h-8 shrink-0 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 flex items-center justify-center" aria-hidden="true">
+                  <ChevronRight size={18} />
+                </span>
+              </div>
             </button>
           ))}
         </div>
