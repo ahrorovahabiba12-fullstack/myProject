@@ -108,7 +108,8 @@
     "adminUsers": "Foydalanuvchilar",
     "dtm": "DTM testlari",
     "openMenu": "Menyuni ochish",
-    "closeMenu": "Menyuni yopish"
+    "closeMenu": "Menyuni yopish",
+    "adminNotifications": "Bildirishnomalar"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -446,5 +447,34 @@
     "review": "Javoblar tahlili",
     "skipped": "Javob berilmagan",
     "explanation": "Tushuntirish"
+  },
+  "adminNotif": {
+    "title": "Bildirishnoma yuborish",
+    "intro": "Yozgan xabaringiz tanlangan foydalanuvchilarning qo'ng'iroqcha (🔔) bo'limida paydo bo'ladi.",
+    "whom": "Kimga yuboriladi",
+    "target_all": "Hammaga",
+    "target_grade": "Bitta sinfga",
+    "target_email": "Bitta foydalanuvchiga (email)",
+    "grade": "Sinf",
+    "audience_ALL": "O'quvchilar va ota-onalar",
+    "audience_STUDENTS": "Faqat o'quvchilar",
+    "audience_PARENTS": "Faqat ota-onalar",
+    "titleLabel": "Sarlavha",
+    "bodyLabel": "Matn",
+    "addRu": "Rus tilidagi matn (ixtiyoriy)",
+    "titleRuLabel": "Sarlavha (rus tilida)",
+    "bodyRuLabel": "Matn (rus tilida)",
+    "send": "Yuborish",
+    "sent": "{{count}} ta foydalanuvchiga yuborildi",
+    "error": "Yuborib bo'lmadi. Email bo'yicha yuborayotgan bo'lsangiz, bunday faol foydalanuvchi borligini tekshiring.",
+    "confirm": "Bildirishnoma yuborilsinmi? Kimga: {{scope}}",
+    "toAll": "hammaga",
+    "toGrade": "{{grade}}-sinfga",
+    "autoTitle": "Tizim o'zi yuboradigan bildirishnomalar",
+    "auto1": "Ro'yxatdan o'tganda: xush kelibsiz xabari",
+    "auto2": "Yangi yutuq olinganda: o'quvchiga va ota-onasiga",
+    "auto3": "Test yoki DTM mashqi topshirilganda: ota-onaga natija",
+    "auto4": "Kasb tanlash testi topshirilganda: mos kasblar (o'quvchi va ota-onaga)",
+    "auto5": "Ketma-ket kunlar seriyasi uzilay deganda: o'quvchiga eslatma"
   }
 }

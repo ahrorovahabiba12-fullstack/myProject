@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { notificationApi, NotificationItem } from "../../lib/api";
 import { EmptyState, ErrorState, Skeleton } from "../ui/primitives";
 
@@ -19,11 +20,14 @@ function useRelativeTime() {
   };
 }
 
-function NotificationRow({ item, onRead }: { item: NotificationItem; onRead: (id: string) => void }) {
+function NotificationRow({ item, onRead, onOpen }: { item: NotificationItem; onRead: (id: string) => void; onOpen: (link: string) => void }) {
   const relativeTime = useRelativeTime();
   return (
     <button
-      onClick={() => !item.read && onRead(item.id)}
+      onClick={() => {
+        if (!item.read) onRead(item.id);
+        if (item.link) onOpen(item.link);
+      }}
       className="w-full text-left px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-black/[.02] dark:hover:bg-white/[.03] transition-colors flex gap-2"
     >
       {!item.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />}
@@ -37,18 +41,23 @@ function NotificationRow({ item, onRead }: { item: NotificationItem; onRead: (id
 }
 
 export function NotificationPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data: unread } = useQuery({ queryKey: ["unread-count"], queryFn: notificationApi.unreadCount });
+  const { data: unread } = useQuery({
+    queryKey: ["unread-count"],
+    queryFn: notificationApi.unreadCount,
+    refetchInterval: 60_000,
+  });
   const {
     data: notifications,
     isLoading,
     isError,
     refetch,
-  } = useQuery({ queryKey: ["notifications"], queryFn: notificationApi.list, enabled: open });
+  } = useQuery({ queryKey: ["notifications", i18n.language], queryFn: notificationApi.list, enabled: open });
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -100,7 +109,15 @@ export function NotificationPanel() {
               <EmptyState icon="🔔" title={t("notifications.empty")} />
             </div>
           ) : (
-            notifications?.map((n) => <NotificationRow key={n.id} item={n} onRead={markRead} />)
+            notifications?.map((n) => <NotificationRow
+                key={n.id}
+                item={n}
+                onRead={markRead}
+                onOpen={(link) => {
+                  setOpen(false);
+                  navigate(link);
+                }}
+              />)
           )}
         </div>
       )}

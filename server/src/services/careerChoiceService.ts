@@ -10,6 +10,7 @@ import { CAREER_TEST, CREATIVE_EXAM, PHYSICAL_EXAM, RIASEC_TYPES, Riasec } from 
 import { CAREER_META } from "../constants/careerMeta";
 import { CAREER_DESC_RU } from "../constants/careerDescRu";
 import { MIN_CAREER_GRADE } from "./careerService";
+import { notifier } from "./notifier";
 
 const TYPES = Object.keys(RIASEC_TYPES) as Riasec[];
 const MAX_PER_TYPE = 2 * (CAREER_TEST.length / TYPES.length);
@@ -94,7 +95,14 @@ export class CareerChoiceService {
     }
     const { scores, topTypes } = scoreTest(answers);
     const saved = await this.careerRepo.saveTestResult(studentId, scores, topTypes);
-    return this.buildResult(student, saved, lang);
+    const result = await this.buildResult(student, saved, lang);
+    const top = await prisma.career.findMany({
+      where: { code: { in: result.careers.slice(0, 3).map((c) => c.code) } },
+      select: { code: true, nameUz: true, nameRu: true },
+    });
+    const order = result.careers.map((c) => c.code);
+    await notifier.careerTestCompleted(studentId, top.sort((a, b) => order.indexOf(a.code) - order.indexOf(b.code)));
+    return result;
   }
 
   async latest(studentId: string, lang: Lang) {

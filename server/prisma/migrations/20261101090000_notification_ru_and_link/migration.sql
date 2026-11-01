@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Notification" ADD COLUMN     "bodyRu" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "link" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "titleRu" TEXT NOT NULL DEFAULT '';

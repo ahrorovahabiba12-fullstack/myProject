@@ -660,6 +660,11 @@ model Notification {
   type        NotificationType
   title       String
   body        String
+  // Russian text; empty = show the Uzbek one.
+  titleRu     String           @default("")
+  bodyRu      String           @default("")
+  // Optional in-app path opened when the notification is tapped (e.g. "/achievements").
+  link        String           @default("")
   read        Boolean          @default(false)
   createdAt   DateTime         @default(now())
 

@@ -299,6 +299,7 @@ export interface NotificationItem {
   type: string;
   title: string;
   body: string;
+  link: string | null;
   read: boolean;
   createdAt: string;
 }
@@ -446,6 +447,16 @@ export interface AdminUniversity {
   city: string;
 }
 
+export interface AdminNotificationInput {
+  title: string;
+  body: string;
+  titleRu?: string;
+  bodyRu?: string;
+  audience: "STUDENTS" | "PARENTS" | "ALL";
+  grade?: number;
+  email?: string;
+}
+
 export const adminApi = {
   getStats: () => api.get<AdminStats>("/admin/stats").then((r) => r.data),
   listUsers: () => api.get<AdminUser[]>("/admin/users").then((r) => r.data),
@@ -453,6 +464,8 @@ export const adminApi = {
   listSubjects: () => api.get<AdminSubject[]>("/admin/subjects").then((r) => r.data),
   listCareers: () => api.get<AdminCareer[]>("/admin/careers").then((r) => r.data),
   listUniversities: () => api.get<AdminUniversity[]>("/admin/universities").then((r) => r.data),
+  sendNotification: (input: AdminNotificationInput) =>
+    api.post<{ sent: number }>("/admin/notifications", input).then((r) => r.data),
   updateUserStatus: (userId: string, status: "ACTIVE" | "BLOCKED") =>
     api.patch<{ id: string; status: "ACTIVE" | "BLOCKED" }>(`/admin/users/${userId}/status`, { status }).then((r) => r.data),
 };

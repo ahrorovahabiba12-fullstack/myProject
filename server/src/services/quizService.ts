@@ -3,6 +3,7 @@ import { Badge, Prisma, SubjectLevelEnum } from "@prisma/client";
 import { QuizRepository } from "../repositories/quizRepository";
 import { StudentRepository } from "../repositories/studentRepository";
 import { GamificationService } from "./gamificationService";
+import { notifier } from "./notifier";
 import { StudySessionRepository } from "../repositories/studySessionRepository";
 import { AppError } from "../utils/AppError";
 import { prisma } from "../config/prisma";
@@ -218,6 +219,11 @@ export class QuizService {
     } catch {
       /* non-critical side effect — quiz result still stands regardless */
     }
+
+    // Best-effort notifications (the notifier swallows its own errors).
+    await notifier.badgesEarned(studentId, newBadges);
+    const subjectRow = await prisma.subject.findUnique({ where: { id: subjectId }, select: { nameUz: true, nameRu: true } });
+    if (subjectRow) await notifier.quizCompleted(studentId, subjectRow, grade, score);
 
     // Best-effort: record the real quiz-taking time as a QUIZ study session —
     // that is what Progress/analytics count as study minutes. Progress itself

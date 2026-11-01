@@ -4,6 +4,7 @@ import { Lang } from "../middleware/language";
 import { pick } from "../utils/localize";
 import { signDtmToken, verifyDtmToken, DtmTokenPayload } from "../utils/jwt";
 import { DTM_BLOCKS, DTM_COMPULSORY } from "./careerChoiceService";
+import { notifier } from "./notifier";
 
 type Block = DtmTokenPayload["block"];
 
@@ -101,12 +102,16 @@ export class DtmService {
       });
     const correct = review.filter((r) => r.isCorrect).length;
     const total = review.length;
+    const points = Math.round(correct * spec.points * 10) / 10;
+    const maxPoints = Math.round(total * spec.points * 10) / 10;
+    const subjectRow = await this.db.subject.findFirst({ where: { code: token.subjectCode }, select: { nameUz: true, nameRu: true } });
+    if (subjectRow) await notifier.dtmCompleted(studentId, subjectRow, points, maxPoints);
     return {
       block: token.block,
       correct,
       total,
-      points: Math.round(correct * spec.points * 10) / 10,
-      maxPoints: Math.round(total * spec.points * 10) / 10,
+      points,
+      maxPoints,
       percent: total ? Math.round((correct / total) * 100) : 0,
       review,
     };
