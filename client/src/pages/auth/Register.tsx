@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
-import { Input } from "../../components/ui/primitives";
+import { Input, PasswordInput } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import clsx from "clsx";
 import { LogoIcon } from "../../components/icons/LogoIcon";
@@ -76,9 +76,8 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input id="fullName" label={t("auth.fullName")} value={fullName} onChange={(e) => setFullName(e.target.value)} required />
           <Input id="email" type="email" label={t("auth.email")} value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             label={t("auth.password")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

@@ -44,7 +44,9 @@
     "parentEmailOptional": "Ota-ona emaili (ixtiyoriy)",
     "loginError": "Email yoki parol noto'g'ri",
     "registerError": "Ro'yxatdan o'tishda xatolik yuz berdi",
-    "gradeHint": "O'qiyotgan sinfingizni tanlang"
+    "gradeHint": "O'qiyotgan sinfingizni tanlang",
+    "showPassword": "Parolni ko'rsatish",
+    "hidePassword": "Parolni yashirish"
   },
   "dashboard": {
     "greeting": "Salom, {{name}}! 👋",
@@ -407,7 +409,9 @@
     "unblock": "Blokdan chiqarish",
     "confirmBlock": "{{name}}ni bloklashni xohlaysizmi? U tizimga kira olmaydi.",
     "confirmUnblock": "{{name}}ni blokdan chiqarishni xohlaysizmi?",
-    "clearRoleFilter": "{{role}} filtri — tozalash"
+    "clearRoleFilter": "{{role}} filtri — tozalash",
+    "gradeFilter": "Sinf bo'yicha saralash",
+    "allGrades": "Barcha sinflar"
   },
   "mobileNav": {
     "home": "Bosh sahifa",

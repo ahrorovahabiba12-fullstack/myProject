@@ -44,7 +44,9 @@
     "parentEmailOptional": "Email родителя (необязательно)",
     "loginError": "Неверный email или пароль",
     "registerError": "Ошибка при регистрации",
-    "gradeHint": "Выберите класс, в котором вы учитесь"
+    "gradeHint": "Выберите класс, в котором вы учитесь",
+    "showPassword": "Показать пароль",
+    "hidePassword": "Скрыть пароль"
   },
   "dashboard": {
     "greeting": "Привет, {{name}}! 👋",
@@ -407,7 +409,9 @@
     "unblock": "Разблокировать",
     "confirmBlock": "Заблокировать пользователя {{name}}? Он не сможет войти в систему.",
     "confirmUnblock": "Разблокировать пользователя {{name}}?",
-    "clearRoleFilter": "Фильтр «{{role}}» — сбросить"
+    "clearRoleFilter": "Фильтр «{{role}}» — сбросить",
+    "gradeFilter": "Фильтр по классу",
+    "allGrades": "Все классы"
   },
   "mobileNav": {
     "home": "Главная",

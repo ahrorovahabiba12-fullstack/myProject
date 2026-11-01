@@ -413,6 +413,7 @@ export interface AdminUser {
   createdAt: string;
   grade: number | null;
   childrenCount: number | null;
+  children: { fullName: string; grade: number }[];
 }
 
 export interface AdminActiveStudentToday {

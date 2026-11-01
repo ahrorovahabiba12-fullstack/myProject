@@ -1,5 +1,6 @@
-import { HTMLAttributes, InputHTMLAttributes, forwardRef, useEffect } from "react";
-import { X } from "lucide-react";
+import { HTMLAttributes, InputHTMLAttributes, forwardRef, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Eye, EyeOff, X } from "lucide-react";
 import clsx from "clsx";
 
 export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
@@ -38,6 +39,47 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({ label, error, c
   </div>
 ));
 Input.displayName = "Input";
+
+/** Password field with an eye button that shows / hides what was typed. */
+export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputProps, "type">>(({ label, error, className, id, ...props }, ref) => {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label htmlFor={id} className="text-sm font-medium text-[var(--text-secondary)]">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <input
+          ref={ref}
+          id={id}
+          type={visible ? "text" : "password"}
+          className={clsx("input-field w-full pr-12", error && "ring-2 ring-danger", className)}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? t("auth.hidePassword") : t("auth.showPassword")}
+          aria-pressed={visible}
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30"
+        >
+          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+      {error && (
+        <span id={`${id}-error`} role="alert" className="text-sm text-danger">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+});
+PasswordInput.displayName = "PasswordInput";
 
 export function Badge({ children, tone = "brand" }: { children: React.ReactNode; tone?: "brand" | "success" | "warning" | "danger" }) {
   const toneClass = {

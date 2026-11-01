@@ -55,7 +55,7 @@ export class AdminRepository {
   listUsers() {
     return this.db.user.findMany({
       orderBy: { createdAt: "desc" },
-      take: 200,
+      take: 2000,
       select: {
         id: true,
         fullName: true,
@@ -65,7 +65,7 @@ export class AdminRepository {
         status: true,
         createdAt: true,
         student: { select: { grade: true } },
-        parent: { select: { students: { select: { id: true } } } },
+        parent: { select: { students: { select: { id: true, grade: true, user: { select: { fullName: true } } } } } },
       },
     });
   }

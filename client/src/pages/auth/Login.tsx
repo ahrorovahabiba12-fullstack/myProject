@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
-import { Input } from "../../components/ui/primitives";
+import { Input, PasswordInput } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { LogoIcon } from "../../components/icons/LogoIcon";
 
@@ -56,9 +56,8 @@ export default function Login() {
             required
             autoComplete="email"
           />
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             label={t("auth.password")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
