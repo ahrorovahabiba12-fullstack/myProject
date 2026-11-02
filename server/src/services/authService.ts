@@ -6,6 +6,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/
 import { AppError } from "../utils/AppError";
 import { RegisterInput, LoginInput } from "../validators/authValidators";
 import { prisma } from "../config/prisma";
+import { notifier } from "./notifier";
 
 const REFRESH_TTL_DAYS = 30;
 const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
@@ -51,6 +52,8 @@ export class AuthService {
       return { user, student, parent: null };
     });
 
+    await notifier.welcome(result.user.id, input.role === "PARENT" ? "PARENT" : "STUDENT");
+    if (result.student?.parentId) await notifier.parentLinked(result.student.id);
     return this.issueSession(result.user.id, result.user.role, result.student?.id, result.parent?.id);
   }
 

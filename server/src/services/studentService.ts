@@ -1,6 +1,7 @@
 import { StudentRepository } from "../repositories/studentRepository";
 import { ParentRepository } from "../repositories/parentRepository";
 import { GamificationService } from "./gamificationService";
+import { notifier } from "./notifier";
 import { prisma } from "../config/prisma";
 import { AppError } from "../utils/AppError";
 import { MIN_CAREER_GRADE } from "./careerService";
@@ -24,7 +25,6 @@ export class StudentService {
       parent: linked?.parent ? { fullName: linked.parent.user.fullName, email: linked.parent.user.email } : null,
       region: student.region,
       interests: student.interests,
-      favoriteSubjects: student.favoriteSubjects,
       goals: student.goals,
       careerInterests: student.careerInterests,
       careerModuleVisible: student.grade >= MIN_CAREER_GRADE,
@@ -39,7 +39,7 @@ export class StudentService {
 
   async updateProfile(
     studentId: string,
-    data: Partial<{ interests: string[]; favoriteSubjects: string[]; goals: string[]; careerInterests: string[]; region: string | null }>
+    data: Partial<{ interests: string[]; goals: string[]; careerInterests: string[]; region: string | null }>
   ) {
     return this.repo.updateProfile(studentId, data);
   }
@@ -54,6 +54,7 @@ export class StudentService {
     const parent = await this.parentRepo.findByEmail(parentEmail);
     if (!parent) throw AppError.notFound("Bu email bilan ota-ona hisobi topilmadi");
     await this.repo.setParent(studentId, parent.id);
+    await notifier.parentLinked(studentId);
     return { parent: { fullName: parent.user.fullName, email: parent.user.email } };
   }
 
@@ -71,6 +72,9 @@ export class StudentService {
       prisma.quizResult.findMany({ where: { studentId, attemptDate: { gte: today } }, select: { subjectId: true } }),
     ]);
     const todaySubjectCount = new Set(todayQuizzes.map((q) => q.subjectId)).size;
+    if (streak === 0) {
+      await notifier.streakReminder(studentId, await this.gamification.streakUntilYesterday(studentId), false);
+    }
 
     return {
       fullName: student.user.fullName,

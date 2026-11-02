@@ -12,8 +12,8 @@ describe("CareerService — grade business rule (real DB)", () => {
   beforeEach(() => resetDb());
   afterAll(() => prisma.$disconnect());
 
-  it("rejects career recommendations for grade 8, and never persists a recommendation", async () => {
-    const { student } = await createStudentUser({ grade: 8 });
+  it("rejects career recommendations for grade 7, and never persists a recommendation", async () => {
+    const { student } = await createStudentUser({ grade: 7 });
     await createCareer({ code: "SOFTWARE_ENGINEER" });
     const service = new CareerService();
 
@@ -23,8 +23,8 @@ describe("CareerService — grade business rule (real DB)", () => {
     expect(saved).toHaveLength(0);
   });
 
-  it("allows career recommendations for grade 9+ and persists the match", async () => {
-    const { student } = await createStudentUser({ grade: 9 });
+  it("allows career recommendations for grade 8+ and persists the match", async () => {
+    const { student } = await createStudentUser({ grade: 8 });
     await createCareer({ code: "SOFTWARE_ENGINEER", nameUz: "Dasturchi", nameRu: "Программист" });
 
     const service = new CareerService();
@@ -56,7 +56,7 @@ describe("CareerService.listUniversities (real DB)", () => {
   afterAll(() => prisma.$disconnect());
 
   it("localizes name, description, city, and country against the requested language", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["INFORMATICS"] });
+    const { student } = await createStudentUser({ grade: 9, topSubject: "INFORMATICS" });
     await createSubject({ code: "INFORMATICS", nameUz: "Informatika", nameRu: "Информатика" });
     await prisma.university.create({
       data: {
@@ -80,7 +80,7 @@ describe("CareerService.listUniversities (real DB)", () => {
   });
 
   it("falls back to the Uzbek city/country when a row hasn't been backfilled with Russian values yet", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["INFORMATICS"] });
+    const { student } = await createStudentUser({ grade: 9, topSubject: "INFORMATICS" });
     await createSubject({ code: "INFORMATICS", nameUz: "Informatika", nameRu: "Информатика" });
     await prisma.university.create({
       data: { nameUz: "TATU", nameRu: "ТУИТ", country: "O'zbekiston", city: "Toshkent", programs: ["IT"] },
@@ -91,14 +91,14 @@ describe("CareerService.listUniversities (real DB)", () => {
     expect(ru.universities[0]).toMatchObject({ city: "Toshkent", country: "O'zbekiston" });
   });
 
-  it("rejects for grade < 9 same as other career-module endpoints", async () => {
-    const { student } = await createStudentUser({ grade: 8 });
+  it("rejects for grade < 8 same as other career-module endpoints", async () => {
+    const { student } = await createStudentUser({ grade: 7 });
 
     await expect(new CareerService().listUniversities(student.id, "uz")).rejects.toMatchObject({ statusCode: 403 });
   });
 
-  it("returns an empty list with no top subject when the student has neither a favorite subject nor any quiz activity", async () => {
-    const { student } = await createStudentUser({ grade: 9 }); // favoriteSubjects defaults to [], no subjectLevels either
+  it("returns an empty list with no top subject when the student has no quiz activity yet", async () => {
+    const { student } = await createStudentUser({ grade: 9 }); // no subjectLevels
     await prisma.university.create({
       data: { nameUz: "TATU", nameRu: "ТУИТ", country: "O'zbekiston", city: "Toshkent", programs: ["IT"] },
     });
@@ -108,8 +108,8 @@ describe("CareerService.listUniversities (real DB)", () => {
     expect(result).toEqual({ universities: [], topSubject: null });
   });
 
-  it("falls back to the strongest quiz-derived subject when no favorite subject is set", async () => {
-    const { student } = await createStudentUser({ grade: 9 }); // no favoriteSubjects
+  it("uses the strongest quiz-derived subject", async () => {
+    const { student } = await createStudentUser({ grade: 9 });
     const math = await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
     await prisma.subjectLevel.create({ data: { studentId: student.id, subjectId: math.id, level: "STRONG", score: 90, source: "quiz" } });
     const mathUni = await prisma.university.create({
@@ -120,17 +120,6 @@ describe("CareerService.listUniversities (real DB)", () => {
 
     expect(result.topSubject).toBe("Matematika");
     expect(result.universities.map((u) => u.id)).toContain(mathUni.id);
-  });
-
-  it("prefers the explicit favorite subject over a quiz-derived strong subject when both exist", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["HISTORY"] });
-    const math = await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
-    await createSubject({ code: "HISTORY", nameUz: "Tarix", nameRu: "История" });
-    await prisma.subjectLevel.create({ data: { studentId: student.id, subjectId: math.id, level: "STRONG", score: 95, source: "quiz" } });
-
-    const result = await new CareerService().listUniversities(student.id, "uz");
-
-    expect(result.topSubject).toBe("Tarix");
   });
 
   it("picks the highest-scoring subject when the student has several STRONG ones", async () => {
@@ -167,8 +156,8 @@ describe("CareerService.listUniversities (real DB)", () => {
     expect(result.topSubject).toBe("Tarix");
   });
 
-  it("only shows universities matching the student's first favorite subject, not every subject they might like", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["INFORMATICS", "HISTORY"] });
+  it("only shows universities matching the student's top subject, not every subject they might like", async () => {
+    const { student } = await createStudentUser({ grade: 9, topSubject: "INFORMATICS" });
     await createSubject({ code: "INFORMATICS", nameUz: "Informatika", nameRu: "Информатика" });
     const itUni = await prisma.university.create({
       data: { nameUz: "IT Uni", nameRu: "IT Uni", country: "O'zbekiston", city: "Toshkent", programs: ["IT"] },
@@ -185,12 +174,12 @@ describe("CareerService.listUniversities (real DB)", () => {
   });
 });
 
-describe("CareerService.listUniversities — filtering by the student's own top favorite subject (real DB)", () => {
+describe("CareerService.listUniversities — filtering by the student's top quiz subject (real DB)", () => {
   beforeEach(() => resetDb());
   afterAll(() => prisma.$disconnect());
 
   it("includes a university with a matching program and excludes one with none", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH"] });
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH" });
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
 
     const irrelevant = await prisma.university.create({
@@ -206,8 +195,8 @@ describe("CareerService.listUniversities — filtering by the student's own top 
     expect(result.universities.map((u) => u.id)).not.toContain(irrelevant.id);
   });
 
-  it("uses only the FIRST favorite subject, ignoring later ones in the list", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH", "HISTORY"] });
+  it("uses only the top subject", async () => {
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH" });
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
 
     const mathUni = await prisma.university.create({
@@ -224,7 +213,7 @@ describe("CareerService.listUniversities — filtering by the student's own top 
   });
 
   it("never lets a short program name like 'IT' false-match an unrelated program like 'Literature'", async () => {
-    const { student } = await createStudentUser({ grade: 9, fullName: "Info Student", favoriteSubjects: ["INFORMATICS"] });
+    const { student } = await createStudentUser({ grade: 9, fullName: "Info Student", topSubject: "INFORMATICS" });
     await createSubject({ code: "INFORMATICS", nameUz: "Informatika", nameRu: "Информатика" });
 
     const litUni = await prisma.university.create({
@@ -246,7 +235,7 @@ describe("CareerService.listUniversities — region is a hard filter (real DB)",
   afterAll(() => prisma.$disconnect());
 
   it("hides a university outside the student's own region entirely", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH"], region: "SAMARKAND" });
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH", region: "SAMARKAND" });
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
 
     const tashkentUni = await prisma.university.create({
@@ -263,8 +252,8 @@ describe("CareerService.listUniversities — region is a hard filter (real DB)",
     expect(ids).not.toContain(tashkentUni.id); // fully hidden, not just ranked lower
   });
 
-  it("returns an empty list when nothing in the student's region matches their favorite subject, instead of falling back to other regions", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH"], region: "SAMARKAND" });
+  it("returns an empty list when nothing in the student's region matches their top subject, instead of falling back to other regions", async () => {
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH", region: "SAMARKAND" });
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
     await prisma.university.create({
       data: { nameUz: "Tashkent Math Uni", nameRu: "Tashkent Math Uni", country: "O'zbekiston", city: "Toshkent", region: "TASHKENT_CITY", programs: ["Mathematics"] },
@@ -276,7 +265,7 @@ describe("CareerService.listUniversities — region is a hard filter (real DB)",
   });
 
   it("shows universities from every region when the student hasn't set one yet", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH"] }); // no region
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH" }); // no region
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
 
     const aUni = await prisma.university.create({
@@ -294,7 +283,7 @@ describe("CareerService.listUniversities — region is a hard filter (real DB)",
   });
 
   it("returns the localized region name alongside each university", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH"] });
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH" });
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
     await prisma.university.create({
       data: { nameUz: "Uni", nameRu: "Uni", country: "O'zbekiston", city: "Toshkent", region: "TASHKENT_CITY", programs: ["Mathematics"] },
@@ -308,7 +297,7 @@ describe("CareerService.listUniversities — region is a hard filter (real DB)",
   });
 
   it("passes through the university's verified website when set, and an empty string when not", async () => {
-    const { student } = await createStudentUser({ grade: 9, favoriteSubjects: ["MATH"] });
+    const { student } = await createStudentUser({ grade: 9, topSubject: "MATH" });
     await createSubject({ code: "MATH", nameUz: "Matematika", nameRu: "Математика" });
     await prisma.university.create({
       data: { nameUz: "With Site", nameRu: "With Site", country: "O'zbekiston", city: "Toshkent", programs: ["Mathematics"], website: "https://example.uz" },

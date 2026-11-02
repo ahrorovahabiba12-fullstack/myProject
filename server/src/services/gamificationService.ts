@@ -35,6 +35,21 @@ export class GamificationService {
     return granted.filter((g): g is Badge => g !== null);
   }
 
+  /** Consecutive active days ending yesterday (for the "keep your streak" reminder). */
+  async streakUntilYesterday(studentId: string): Promise<number> {
+    const recent = await this.repo.recentProgressDates(studentId, 60);
+    const byDate = new Set(recent.map((p) => p.date.toDateString()));
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    cursor.setDate(cursor.getDate() - 1);
+    let streak = 0;
+    while (byDate.has(cursor.toDateString())) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
   async currentStreak(studentId: string): Promise<number> {
     const recent = await this.repo.recentProgressDates(studentId, 60);
     let streak = 0;

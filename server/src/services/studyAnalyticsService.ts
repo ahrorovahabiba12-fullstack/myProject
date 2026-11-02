@@ -1,4 +1,3 @@
-import { ScheduleRepository } from "../repositories/scheduleRepository";
 import { StudySessionRepository } from "../repositories/studySessionRepository";
 import { ConsistencyRepository } from "../repositories/consistencyRepository";
 import { SubjectRepository } from "../repositories/subjectRepository";
@@ -36,14 +35,8 @@ export interface DailyTrendPoint {
 }
 
 export interface StudyStats {
-  plannedTasks: number;
-  completedTasks: number;
-  incompleteTasks: number;
-  completionRate: number; // 0-100, tasks-based
-  plannedMinutes: number; // sum of Schedule.minutes for all tasks in the period
   actualMinutes: number; // sum of real elapsed minutes from completed StudySessions
-  actualVsPlannedRate: number; // 0-100 — how much of the planned time really happened
-  sessionCount: number; // StudySessions started in the period
+  sessionCount: number; // completed StudySessions in the period
   avgSessionMinutes: number;
   consistencyScore: number;
   currentStreak: number;
@@ -53,7 +46,6 @@ export interface StudyStats {
 
 export class StudyAnalyticsService {
   constructor(
-    private scheduleRepo = new ScheduleRepository(prisma),
     private sessionRepo = new StudySessionRepository(prisma),
     private consistencyRepo = new ConsistencyRepository(prisma),
     private subjectRepo = new SubjectRepository(prisma),
@@ -67,8 +59,7 @@ export class StudyAnalyticsService {
     since.setHours(0, 0, 0, 0);
     const periodEnd = new Date();
 
-    const [scheduleItems, sessions, subjects, progress, consistency, streak] = await Promise.all([
-      this.scheduleRepo.findRecent(studentId, since),
+    const [sessions, subjects, progress, consistency, streak] = await Promise.all([
       this.sessionRepo.findRecent(studentId, since),
       this.subjectRepo.findAll(),
       this.consistencyRepo.progressInRange(studentId, since, periodEnd),
@@ -78,15 +69,8 @@ export class StudyAnalyticsService {
 
     const subjectNameById = new Map(subjects.map((s) => [s.id, pick(s.nameUz, s.nameRu, lang)]));
 
-    const plannedTasks = scheduleItems.length;
-    const completedTasks = scheduleItems.filter((i) => i.status === "COMPLETED").length;
-    const incompleteTasks = plannedTasks - completedTasks;
-    const completionRate = plannedTasks > 0 ? round1((completedTasks / plannedTasks) * 100) : 0;
-
-    const plannedMinutes = scheduleItems.reduce((sum, i) => sum + i.minutes, 0);
     const completedSessions = sessions.filter((s) => s.status === "COMPLETED");
     const actualMinutes = completedSessions.reduce((sum, s) => sum + s.minutes, 0);
-    const actualVsPlannedRate = plannedMinutes > 0 ? round1((actualMinutes / plannedMinutes) * 100) : 0;
 
     const avgSessionMinutes = completedSessions.length > 0 ? round1(actualMinutes / completedSessions.length) : 0;
 
@@ -116,13 +100,7 @@ export class StudyAnalyticsService {
     });
 
     return {
-      plannedTasks,
-      completedTasks,
-      incompleteTasks,
-      completionRate,
-      plannedMinutes,
       actualMinutes,
-      actualVsPlannedRate,
       // completedSessions, not sessions — avgSessionMinutes and
       // subjectBreakdown below are already completed-only, so counting every
       // session here (including abandoned/still-open/auto-skipped ones) made
@@ -147,25 +125,17 @@ export class StudyAnalyticsService {
   }
 
   buildRecommendation(stats: StudyStats, lang: Lang): string {
-    // Find the subject with the worst drop-off: subjects the student keeps starting
-    // (or planning) but rarely finishing, among subjects with at least a couple of
-    // data points so a single skipped task doesn't trigger a false signal.
+    // A subject with several sessions but very little time per session is being
+    // rushed — only with a couple of data points, so one quick quiz doesn't
+    // trigger a false signal.
     const worstSubject = stats.subjectBreakdown
       .filter((s) => s.sessionCount >= 2)
       .find((s) => s.minutes / Math.max(1, s.sessionCount) < 20);
 
     if (worstSubject) {
       return pick(
-        `Oxirgi kunlarda "${worstSubject.subjectName}" vazifalarining bir qismi bajarilmay qolmoqda. Keyingi rejada bu fan uchun qisqaroq sessionlardan foydalanish tavsiya qilinadi.`,
-        `В последнее время часть заданий по предмету «${worstSubject.subjectName}» остаётся незавершённой. В следующем расписании рекомендуется использовать более короткие сессии для этого предмета.`,
-        lang
-      );
-    }
-
-    if (stats.plannedMinutes > 0 && stats.actualVsPlannedRate < 50) {
-      return pick(
-        `Rejalashtirilgan vaqtning taxminan ${Math.round(stats.actualVsPlannedRate)}% bajarilmoqda. Kichikroq, bajarish osonroq vazifalar bilan boshlash foydali bo'lishi mumkin.`,
-        `Выполняется примерно ${Math.round(stats.actualVsPlannedRate)}% запланированного времени. Может быть полезно начать с более коротких и достижимых задач.`,
+        `"${worstSubject.subjectName}" bo'yicha testlarga juda kam vaqt ajratilmoqda. Shu fanning bitta mavzusini tanlab, savollarni shoshilmasdan yechib ko'ring.`,
+        `На тесты по предмету «${worstSubject.subjectName}» уходит очень мало времени. Выберите одну тему этого предмета и решите вопросы не торопясь.`,
         lang
       );
     }

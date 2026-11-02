@@ -3,9 +3,33 @@ import { PrismaClient, SubjectLevelEnum } from "@prisma/client";
 export class QuizRepository {
   constructor(private db: PrismaClient) {}
 
-  /** Every question available for this subject/grade — selection/weighting happens in QuizService. */
-  findQuestionPool(subjectId: string, grade: number) {
-    return this.db.question.findMany({ where: { subjectId, grade } });
+  findSubjectsWithTopics() {
+    return this.db.subject.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+      include: { topics: { select: { grade: true } } },
+    });
+  }
+
+  findSubjectByCode(code: string) {
+    return this.db.subject.findFirst({ where: { code, active: true } });
+  }
+
+  findTopics(subjectId: string, grade: number) {
+    return this.db.topic.findMany({
+      where: { subjectId, grade },
+      orderBy: { sortOrder: "asc" },
+      include: { _count: { select: { questions: true } } },
+    });
+  }
+
+  findTopic(id: string) {
+    return this.db.topic.findUnique({ where: { id }, include: { subject: true } });
+  }
+
+  /** Every question of one topic — selection/weighting happens in QuizService. */
+  findTopicQuestionPool(topicId: string) {
+    return this.db.question.findMany({ where: { topicId } });
   }
 
   /**

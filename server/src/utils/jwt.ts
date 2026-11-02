@@ -49,6 +49,8 @@ export interface QuizTokenPayload {
   studentId: string;
   subjectId: string;
   grade: number;
+  // Optional: tokens issued before topics existed don't carry one.
+  topicId?: string;
   questionIds: string[];
   startedAt: number; // epoch ms — iat alone only has 1-second precision
 }
@@ -64,3 +66,17 @@ export const signQuizToken = (payload: QuizTokenPayload, attemptId: string): str
 
 export const verifyQuizToken = (token: string): QuizTokenPayload & { jti: string } =>
   jwt.verify(token, quizTokenSecret, { algorithms: ["HS256"] }) as QuizTokenPayload & { jti: string };
+
+// "Namunaviy DTM testi": which questions were served for which block, so the
+// submission is graded against exactly that set. Own derived key again.
+export interface DtmTokenPayload {
+  studentId: string;
+  subjectCode: string;
+  block: "first" | "second" | "compulsory";
+  questionIds: string[];
+  startedAt: number;
+}
+const dtmTokenSecret = crypto.createHmac("sha256", env.JWT_ACCESS_SECRET).update("dtm-practice-token").digest("hex");
+export const signDtmToken = (payload: DtmTokenPayload): string => jwt.sign(payload, dtmTokenSecret, { expiresIn: "24h" });
+export const verifyDtmToken = (token: string): DtmTokenPayload =>
+  jwt.verify(token, dtmTokenSecret, { algorithms: ["HS256"] }) as DtmTokenPayload;

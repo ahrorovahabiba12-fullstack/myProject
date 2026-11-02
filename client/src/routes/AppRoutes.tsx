@@ -8,11 +8,12 @@ import StudentLayout from "../pages/student/StudentLayout";
 import Dashboard from "../pages/student/Dashboard";
 import AIChat from "../pages/student/AIChat";
 import Quiz from "../pages/student/Quiz";
-import Schedule from "../pages/student/Schedule";
 import Progress from "../pages/student/Progress";
 import Achievements from "../pages/student/Achievements";
 import Career from "../pages/student/Career";
 import CareerRoadmap from "../pages/student/CareerRoadmap";
+import CareerDetail from "../pages/student/CareerDetail";
+import Dtm from "../pages/student/Dtm";
 import Universities from "../pages/student/Universities";
 import Profile from "../pages/student/Profile";
 import Settings from "../pages/student/Settings";
@@ -23,6 +24,7 @@ import ParentDashboard from "../pages/parent/ParentDashboard";
 import AdminLayout from "../pages/admin/AdminLayout";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
+import AdminNotifications from "../pages/admin/AdminNotifications";
 
 export default function AppRoutes() {
   return (
@@ -36,11 +38,12 @@ export default function AppRoutes() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<AIChat />} />
           <Route path="/quiz" element={<Quiz />} />
-          <Route path="/schedule" element={<Schedule />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/career" element={<Career />} />
-          <Route path="/career/:careerCode" element={<CareerRoadmap />} />
+          <Route path="/career/:careerCode" element={<CareerDetail />} />
+          <Route path="/career/:careerCode/roadmap" element={<CareerRoadmap />} />
+          <Route path="/dtm" element={<Dtm />} />
           <Route path="/universities" element={<Universities />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
@@ -57,6 +60,7 @@ export default function AppRoutes() {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/notifications" element={<AdminNotifications />} />
         </Route>
       </Route>
 

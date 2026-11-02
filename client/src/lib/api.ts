@@ -82,7 +82,6 @@ export interface StudentProfile {
   parent: { fullName: string; email: string } | null;
   region: string | null;
   interests: string[];
-  favoriteSubjects: string[];
   goals: string[];
   careerInterests: string[];
   careerModuleVisible: boolean;
@@ -120,7 +119,7 @@ export const authApi = {
 export const studentApi = {
   getProfile: () => api.get<StudentProfile>("/students/me").then((r) => r.data),
   getDashboard: () => api.get<DashboardSummary>("/students/dashboard").then((r) => r.data),
-  updateProfile: (data: Partial<Pick<StudentProfile, "interests" | "favoriteSubjects" | "goals" | "careerInterests" | "region">>) =>
+  updateProfile: (data: Partial<Pick<StudentProfile, "interests" | "goals" | "careerInterests" | "region">>) =>
     api.patch<StudentProfile>("/students/me", data).then((r) => r.data),
   linkParent: (parentEmail: string) =>
     api.put<{ parent: { fullName: string; email: string } }>("/students/me/parent", { parentEmail }).then((r) => r.data),
@@ -137,22 +136,59 @@ export interface QuizReviewItem {
   selectedIndex: number;
   correctIndex: number;
   isCorrect: boolean;
+  explanation: string | null;
+}
+
+export interface QuizSubject {
+  code: string;
+  name: string;
+  minGrade: number;
+  maxGrade: number;
+  grades: number[];
+}
+
+export interface QuizTopic {
+  id: string;
+  number: number;
+  name: string;
+  questionCount: number;
+}
+
+export interface QuizEvaluation {
+  mark: 2 | 3 | 4 | 5;
+  title: string;
+  message: string;
+  advice: string;
+}
+
+export interface QuizStart {
+  topic: { id: string; name: string; grade: number };
+  subject: { code: string; name: string };
+  questions: { id: string; text: string; options: string[] }[];
+  quizToken: string;
+}
+
+export interface QuizSubmitResult {
+  score: number;
+  level: string;
+  correctCount: number;
+  total: number;
+  newBadges: string[];
+  review: QuizReviewItem[];
+  evaluation: QuizEvaluation;
 }
 
 export const quizApi = {
-  start: (subjectId: string, grade: number) =>
+  subjects: () => api.get<{ grade: number; subjects: QuizSubject[] }>("/quiz/subjects").then((r) => r.data),
+  topics: (subject: string, grade: number) =>
     api
-      .post<{ questions: { id: string; text: string; options: string[] }[]; quizToken: string }>("/quiz/start", { subjectId, grade })
+      .get<{ subject: { code: string; name: string }; grade: number; topics: QuizTopic[] }>("/quiz/topics", { params: { subject, grade } })
       .then((r) => r.data),
+  start: (topicId: string) => api.post<QuizStart>("/quiz/start", { topicId }).then((r) => r.data),
   // quizToken is start's opaque, server-signed record of this attempt — echoed
-  // back as-is; the server takes subject, grade and timing from it.
+  // back as-is; the server takes subject, grade, topic and timing from it.
   submit: (quizToken: string, answers: { questionId: string; selectedIndex: number }[]) =>
-    api
-      .post<{ score: number; level: string; correctCount: number; total: number; newBadges: string[]; review: QuizReviewItem[] }>(
-        "/quiz/submit",
-        { quizToken, answers }
-      )
-      .then((r) => r.data),
+    api.post<QuizSubmitResult>("/quiz/submit", { quizToken, answers }).then((r) => r.data),
 };
 
 export interface LearningRecommendation {
@@ -184,6 +220,57 @@ export const careerApi = {
       }>("/career/universities")
       .then((r) => r.data),
   getCatalog: () => api.get<{ code: string; name: string }[]>("/career/catalog").then((r) => r.data),
+  getTest: () => api.get<CareerTest>("/career/test").then((r) => r.data),
+  latestTest: () => api.get<CareerTestResult | null>("/career/test/latest").then((r) => r.data),
+  submitTest: (answers: number[]) => api.post<CareerTestResult>("/career/test", { answers }).then((r) => r.data),
+  getDetails: (code: string) => api.get<CareerDetails>(`/career/details/${code}`).then((r) => r.data),
+  studyCenters: (subject: string, region?: string | null) =>
+    api.get<StudyCenter[]>("/career/study-centers", { params: { subject, ...(region ? { region } : {}) } }).then((r) => r.data),
+};
+
+export type RiasecType = { code: string; name: string; description: string; emoji: string };
+export type CareerTest = { questions: { index: number; text: string }[]; types: RiasecType[] };
+export type CareerTestResult = {
+  createdAt: string;
+  scores: (RiasecType & { score: number })[];
+  topTypes: RiasecType[];
+  careers: { code: string; name: string; description: string; matchScore: number; types: RiasecType[]; examSubjects: string[] }[];
+};
+export type ExamBlock = { code: string; name: string; questions: number; points: number };
+export type CareerDetails = {
+  code: string;
+  name: string;
+  description: string;
+  types: RiasecType[];
+  exam: {
+    compulsory: ExamBlock[];
+    specialty: (ExamBlock & { block: "first" | "second"; myLevel: string | null; myScore: number | null })[];
+    maxScore: number;
+    extra: string | null;
+  };
+  universities: {
+    id: string;
+    name: string;
+    description: string;
+    city: string;
+    regionCode: string;
+    region: string;
+    programs: string[];
+    website: string;
+    nearMe: boolean;
+  }[];
+  studentRegion: string | null;
+  hasRoadmap: boolean;
+};
+export type StudyCenter = {
+  code: string;
+  name: string;
+  regions: string[];
+  city: string;
+  website: string;
+  source: string;
+  sourceUrl: string;
+  verified: boolean;
 };
 
 export interface ChatHistory {
@@ -194,24 +281,6 @@ export interface ChatHistory {
 export const chatApi = {
   getHistory: () => api.get<ChatHistory>("/chat/history").then((r) => r.data),
   sendMessage: (message: string) => api.post<{ conversationId: string; reply: string }>("/chat/message", { message }).then((r) => r.data),
-};
-
-export type ScheduleItem = {
-  id: string;
-  dayOfWeek: number;
-  title: string;
-  minutes: number;
-  actualMinutes: number;
-  actualSeconds: number;
-  status: "TODO" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
-  subject?: { name: string; code?: string } | null;
-  lastScore?: number | null;
-};
-
-export const scheduleApi = {
-  getCurrentWeek: () => api.get<ScheduleItem[]>("/schedule/current").then((r) => r.data),
-  regenerate: () => api.post<ScheduleItem[]>("/schedule/regenerate").then((r) => r.data),
-  updateStatus: (id: string, status: string) => api.patch(`/schedule/${id}/status`, { status }).then((r) => r.data),
 };
 
 export const progressApi = {
@@ -230,6 +299,7 @@ export interface NotificationItem {
   type: string;
   title: string;
   body: string;
+  link: string | null;
   read: boolean;
   createdAt: string;
 }
@@ -289,13 +359,7 @@ export interface DailyTrendPoint {
 }
 
 export interface StudyStats {
-  plannedTasks: number;
-  completedTasks: number;
-  incompleteTasks: number;
-  completionRate: number;
-  plannedMinutes: number;
   actualMinutes: number;
-  actualVsPlannedRate: number;
   sessionCount: number;
   avgSessionMinutes: number;
   consistencyScore: number;
@@ -349,6 +413,7 @@ export interface AdminUser {
   createdAt: string;
   grade: number | null;
   childrenCount: number | null;
+  children: { fullName: string; grade: number }[];
 }
 
 export interface AdminActiveStudentToday {
@@ -383,6 +448,16 @@ export interface AdminUniversity {
   city: string;
 }
 
+export interface AdminNotificationInput {
+  title: string;
+  body: string;
+  titleRu?: string;
+  bodyRu?: string;
+  audience: "STUDENTS" | "PARENTS" | "ALL";
+  grade?: number;
+  email?: string;
+}
+
 export const adminApi = {
   getStats: () => api.get<AdminStats>("/admin/stats").then((r) => r.data),
   listUsers: () => api.get<AdminUser[]>("/admin/users").then((r) => r.data),
@@ -390,6 +465,38 @@ export const adminApi = {
   listSubjects: () => api.get<AdminSubject[]>("/admin/subjects").then((r) => r.data),
   listCareers: () => api.get<AdminCareer[]>("/admin/careers").then((r) => r.data),
   listUniversities: () => api.get<AdminUniversity[]>("/admin/universities").then((r) => r.data),
+  sendNotification: (input: AdminNotificationInput) =>
+    api.post<{ sent: number }>("/admin/notifications", input).then((r) => r.data),
   updateUserStatus: (userId: string, status: "ACTIVE" | "BLOCKED") =>
     api.patch<{ id: string; status: "ACTIVE" | "BLOCKED" }>(`/admin/users/${userId}/status`, { status }).then((r) => r.data),
+};
+
+
+export type DtmBlock = "first" | "second" | "compulsory";
+export type DtmSubjects = {
+  blocks: Record<DtmBlock | "max", { questions: number; points: number } | number>;
+  compulsory: string[];
+  subjects: { code: string; name: string; available: number; compulsory: boolean }[];
+};
+export type DtmStart = {
+  subject: { code: string; name: string };
+  block: DtmBlock;
+  points: number;
+  questions: { id: string; text: string; options: string[]; grade: number }[];
+  dtmToken: string;
+};
+export type DtmResult = {
+  block: DtmBlock;
+  correct: number;
+  total: number;
+  points: number;
+  maxPoints: number;
+  percent: number;
+  review: (Omit<QuizReviewItem, "selectedIndex"> & { selectedIndex: number | null })[];
+};
+export const dtmApi = {
+  subjects: () => api.get<DtmSubjects>("/dtm/subjects").then((r) => r.data),
+  start: (subject: string, block: DtmBlock) => api.post<DtmStart>("/dtm/start", { subject, block }).then((r) => r.data),
+  submit: (dtmToken: string, answers: { questionId: string; selectedIndex: number }[]) =>
+    api.post<DtmResult>("/dtm/submit", { dtmToken, answers }).then((r) => r.data),
 };

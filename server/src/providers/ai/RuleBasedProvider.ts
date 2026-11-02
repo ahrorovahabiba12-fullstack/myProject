@@ -6,8 +6,6 @@ import {
   ChatMessageInput,
   DailyCoachInput,
   DailyCoachOutput,
-  LearningPlanInput,
-  LearningPlanOutput,
   LearningRecommendationInput,
   LearningRecommendationOutput,
   ParentReportInput,
@@ -231,62 +229,6 @@ export class RuleBasedProvider implements AIProvider {
     };
   }
 
-  async generateLearningPlan(input: LearningPlanInput): Promise<LearningPlanOutput> {
-    const days: LearningPlanOutput["days"] = [];
-    // Weak subjects are entered twice into the rotation pool so they come up roughly
-    // twice as often across the week, not just for longer sessions when their turn
-    // happens to land — a student weak in one subject should see it noticeably more
-    // often, not merely get a longer block on whichever day it's already scheduled.
-    const testedPool = [...input.weakSubjects, ...input.weakSubjects, ...input.mediumSubjects, ...input.strongSubjects];
-    // A brand-new student has no quiz results yet, so weakSubjects/strongSubjects are
-    // both empty — falling back to a vague "general review" would imply history that
-    // doesn't exist. Rotate through real, untested subjects instead; "general review"
-    // is a last resort for the (practically impossible) case where even that is empty.
-    const pool = testedPool.length > 0 ? testedPool : input.neutralSubjects;
-    const weakCodes = new Set(input.weakSubjects.map((s) => s.code));
-    const fallback = { code: "general", nameUz: "Umumiy takrorlash", nameRu: "Общее повторение" };
-    // A second, lighter block per day brings in subjects beyond the tested weak/strong
-    // set — neutral, everyday-useful subjects the student hasn't necessarily tested —
-    // so a week isn't limited to only the 1-2 subjects that happen to have a quiz result.
-    const secondaryPool =
-      input.neutralSubjects.length > 0 ? input.neutralSubjects : [...input.mediumSubjects, ...input.strongSubjects];
-
-    // Monday(1)..Saturday(6) only — the weekly plan deliberately excludes Sunday(7),
-    // a rest day with no scheduled study.
-    for (let d = 1; d <= 6; d++) {
-      const primary = pool[(d - 1) % Math.max(pool.length, 1)] ?? fallback;
-      // Completing a block means taking a short, fixed-length quiz (QUIZ_LENGTH
-      // questions in QuizService) — never literally an hour of study — so these
-      // stay close to how long that quiz actually takes. Keeping them small also
-      // keeps StudyAnalyticsService.actualVsPlannedRate meaningful: that rate
-      // divides the quiz's real elapsed time by this planned figure, so an
-      // inflated estimate here made genuinely-completed-every-day students look
-      // like they were falling far short of their plan.
-      days.push({
-        dayOfWeek: d,
-        subjectCode: primary.code,
-        minutes: weakCodes.has(primary.code)
-          ? Math.min(15, input.availableMinutesPerDay)
-          : Math.min(10, input.availableMinutesPerDay),
-        title: `${primary.nameUz} bo'yicha mashq`,
-        titleRu: `Практика по предмету «${primary.nameRu}»`,
-      });
-
-      const secondaryCandidates = secondaryPool.filter((s) => s.code !== primary.code);
-      if (secondaryCandidates.length > 0 && input.availableMinutesPerDay > 15) {
-        const secondary = secondaryCandidates[(d - 1) % secondaryCandidates.length];
-        days.push({
-          dayOfWeek: d,
-          subjectCode: secondary.code,
-          minutes: Math.min(5, input.availableMinutesPerDay - 15),
-          title: `${secondary.nameUz} bo'yicha qo'shimcha mashq`,
-          titleRu: `Дополнительная практика по предмету «${secondary.nameRu}»`,
-        });
-      }
-    }
-    return { days };
-  }
-
   private readonly subjectTips: Record<string, { uz: string[]; ru: string[] }> = {
     MATH: {
       uz: [
@@ -412,17 +354,17 @@ export class RuleBasedProvider implements AIProvider {
     const weak = context.subjectLevels.filter((s) => s.level === "WEAK").map((s) => s.subjectName);
 
     if (/kasb|career|mutaxassislik|профессия|карьера/i.test(userMessage)) {
-      if (context.grade >= 9) {
+      if (context.grade >= 8) {
         const interestsText = context.careerInterests.join(", ") || L("hali belgilanmagan", "пока не указаны", lang);
         return L(
-          `Sizning qiziqishlaringiz (${interestsText}) va fan natijalaringizga asoslanib, kasb yo'nalishini "Kasb yo'li" bo'limida ko'rishingiz mumkin. Aniqroq maslahat uchun qaysi sohalar qiziqtirayotganini yozing.`,
-          `На основе ваших интересов (${interestsText}) и результатов по предметам вы можете посмотреть карьерное направление в разделе «Карьера». Для более точного совета напишите, какие сферы вас интересуют.`,
+          `Sizning qiziqishlaringiz (${interestsText}) va fan natijalaringizga asoslanib, kasb yo'nalishini "Kasb tanlash" bo'limida ko'rishingiz mumkin. Aniqroq maslahat uchun qaysi sohalar qiziqtirayotganini yozing.`,
+          `На основе ваших интересов (${interestsText}) и результатов по предметам вы можете посмотреть карьерное направление в разделе «Выбор профессии». Для более точного совета напишите, какие сферы вас интересуют.`,
           lang
         );
       }
       return L(
-        "Kasb tavsiyalari 9-sinfdan boshlab ochiladi. Hozircha asosiy fanlarni mustahkamlashga e'tibor qarataylik.",
-        "Рекомендации по профессии открываются с 9 класса. Пока сосредоточимся на укреплении основных предметов.",
+        "Kasb tavsiyalari 8-sinfdan boshlab ochiladi. Hozircha asosiy fanlarni mustahkamlashga e'tibor qarataylik.",
+        "Рекомендации по профессии открываются с 8 класса. Пока сосредоточимся на укреплении основных предметов.",
         lang
       );
     }
@@ -435,8 +377,8 @@ export class RuleBasedProvider implements AIProvider {
           )
         : "";
       return L(
-        `Sizga mos haftalik reja tuzishim mumkin. ${weakNote}"Dars rejasi" bo'limida to'liq jadvalni ko'rishingiz mumkin.`,
-        `Я могу составить для вас подходящий недельный план. ${weakNote}Полное расписание вы найдёте в разделе «План занятий».`,
+        `Har kuni bitta fandan bitta mavzu tanlab test yechish eng yaxshi usul. ${weakNote}"Testlar" bo'limida fan, sinf va mavzuni tanlang.`,
+        `Лучший способ — каждый день решать тест по одной теме одного предмета. ${weakNote}В разделе «Тесты» выберите предмет, класс и тему.`,
         lang
       );
     }
@@ -550,7 +492,7 @@ export class RuleBasedProvider implements AIProvider {
         ),
         recommendedActions: weakText
           ? [L(`${weakText} bo'yicha bugun ham 20 daqiqa ajrating`, `Уделите сегодня 20 минут предмету «${weakText}»`, lang)]
-          : [L("Bugun ham odatdagi rejangizni davom ettiring", "Продолжайте сегодня свой обычный план", lang)],
+          : [L("Bugun ham bitta mavzu bo'yicha test yeching", "Сегодня тоже решите тест по одной теме", lang)],
       };
     }
 
@@ -572,8 +514,8 @@ export class RuleBasedProvider implements AIProvider {
     if (input.isNewStudent) {
       return {
         message: L(
-          `Xush kelibsiz, ${input.studentName}! Bu yerda siz o'z bilim darajangizni sinab ko'rasiz va shaxsiy o'quv rejangizni kuzatasiz.`,
-          `Добро пожаловать, ${input.studentName}! Здесь вы можете проверить свои знания и следить за своим личным планом обучения.`,
+          `Xush kelibsiz, ${input.studentName}! Bu yerda siz fanlar bo'yicha bilimingizni sinab ko'rasiz va o'zingizga mos kasbni topasiz.`,
+          `Добро пожаловать, ${input.studentName}! Здесь вы можете проверить свои знания по предметам и найти подходящую профессию.`,
           lang
         ),
         recommendedActions: [

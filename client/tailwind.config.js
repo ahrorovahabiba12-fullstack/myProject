@@ -37,9 +37,14 @@ export default {
           "60%": { transform: "scale(1.08)", opacity: "1" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        "slide-in": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(0)" },
+        },
       },
       animation: {
         "scale-in": "scale-in 0.35s ease-out",
+        "slide-in": "slide-in 0.2s ease-out",
       },
       fontFamily: {
         sans: ["'Inter'", "system-ui", "sans-serif"],

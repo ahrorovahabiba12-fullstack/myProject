@@ -9,6 +9,7 @@ export function ThemeToggle() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("theme", dark ? "dark" : "light");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#14101f" : "#f7f6fd");
   }, [dark]);
 
   return (

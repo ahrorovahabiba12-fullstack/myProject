@@ -1,15 +1,19 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, Users, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, ShieldCheck, Bell } from "lucide-react";
 import clsx from "clsx";
 
-export function AdminSidebar() {
+export function useAdminNavItems() {
   const { t } = useTranslation();
-
-  const items = [
+  return [
     { to: "/admin", icon: LayoutDashboard, label: t("nav_sidebar.adminDashboard"), end: true },
     { to: "/admin/users", icon: Users, label: t("nav_sidebar.adminUsers"), end: false },
+    { to: "/admin/notifications", icon: Bell, label: t("nav_sidebar.adminNotifications"), end: false },
   ];
+}
+
+export function AdminSidebar() {
+  const items = useAdminNavItems();
 
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-[#1a1533] text-white min-h-screen px-4 py-6 gap-1">

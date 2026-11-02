@@ -8,7 +8,7 @@ const service = new NotificationService();
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.auth?.userId;
   if (!userId) throw AppError.unauthorized();
-  res.status(200).json(await service.list(userId));
+  res.status(200).json(await service.list(userId, req.lang));
 });
 
 export const markRead = asyncHandler(async (req: Request, res: Response) => {

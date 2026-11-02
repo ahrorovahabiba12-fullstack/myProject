@@ -30,7 +30,6 @@ export class RecommendationService {
       lang,
       grade: student.grade,
       interests: student.interests,
-      favoriteSubjects: student.favoriteSubjects,
       subjectLevels,
       goals: student.goals,
     });

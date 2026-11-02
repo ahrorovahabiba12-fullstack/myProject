@@ -158,6 +158,7 @@ export class AdminService {
       createdAt: u.createdAt,
       grade: u.student?.grade ?? null,
       childrenCount: u.parent ? u.parent.students.length : null,
+      children: u.parent ? u.parent.students.map((s) => ({ fullName: s.user.fullName, grade: s.grade })) : [],
     }));
   }
 

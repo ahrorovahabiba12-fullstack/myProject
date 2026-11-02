@@ -1,3 +1,4 @@
+import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useParams, useNavigate, Link } from "react-router-dom";
@@ -27,19 +28,19 @@ export default function CareerRoadmap() {
   const roadmap = useQuery<RoadmapStep[]>({
     queryKey: ["career-roadmap", careerCode],
     queryFn: () => careerApi.getRoadmap(careerCode!),
-    enabled: !!careerCode && (profile.data ? profile.data.grade >= 9 : false),
+    enabled: !!careerCode && (profile.data ? profile.data.grade >= MIN_CAREER_GRADE : false),
   });
 
   if (profile.isLoading) return <Skeleton className="h-40" />;
-  if (profile.data && profile.data.grade < 9) return <Navigate to="/dashboard" replace />;
+  if (profile.data && profile.data.grade < MIN_CAREER_GRADE) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="max-w-2xl">
       <button
-        onClick={() => navigate("/career")}
+        onClick={() => navigate(`/career/${careerCode}`)}
         className="flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] mb-4"
       >
-        <ChevronLeft size={16} /> {t("career.backToList")}
+        <ChevronLeft size={16} /> {t("career.backToCareer")}
       </button>
       <h1 className="text-2xl font-bold mb-6">{t("career.roadmapTitle")}</h1>
       {roadmap.isLoading ? (

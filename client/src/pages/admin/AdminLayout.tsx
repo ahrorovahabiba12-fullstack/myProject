@@ -1,4 +1,5 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import clsx from "clsx";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, LogOut } from "lucide-react";
@@ -6,7 +7,7 @@ import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { LanguageSwitcher } from "../../components/layout/LanguageSwitcher";
 import { ThemeToggle } from "../../components/layout/ThemeToggle";
-import { AdminSidebar } from "../../components/layout/AdminSidebar";
+import { AdminSidebar, useAdminNavItems } from "../../components/layout/AdminSidebar";
 
 export default function AdminLayout() {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export default function AdminLayout() {
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
   const queryClient = useQueryClient();
+  const navItems = useAdminNavItems();
 
   const handleLogout = async () => {
     if (!window.confirm(t("settings.confirmLogout"))) return;
@@ -52,6 +54,24 @@ export default function AdminLayout() {
               </button>
             </nav>
           </div>
+          {/* Mobile: the sidebar is hidden, so show its links as tabs. */}
+          <nav className="lg:hidden flex gap-2 overflow-x-auto px-4 pb-3">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  clsx(
+                    "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium",
+                    isActive ? "bg-brand-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-[var(--text-secondary)]"
+                  )
+                }
+              >
+                <item.icon size={14} /> {item.label}
+              </NavLink>
+            ))}
+          </nav>
         </header>
         <main className="max-w-6xl mx-auto px-6 py-8">
           <p className="text-sm text-[var(--text-secondary)] mb-1">

@@ -89,10 +89,12 @@ describe("AuthService — email casing (real DB)", () => {
     expect(student?.parentId).toBe(parent.id);
   });
 
-  it("rejects a grade with no quiz content (below 4) at sign-up", () => {
-    expect(() =>
-      registerBody({ email: "young@mail.uz", password: "Test1234!", role: "STUDENT", fullName: "Young", grade: 3 })
-    ).toThrow();
+  it("accepts every school grade from 1 to 11 at sign-up, and nothing outside that range", () => {
+    const body = (grade: number) => ({ email: "young@mail.uz", password: "Test1234!", role: "STUDENT", fullName: "Young", grade });
+    expect(() => registerBody(body(1))).not.toThrow();
+    expect(() => registerBody(body(11))).not.toThrow();
+    expect(() => registerBody(body(0))).toThrow();
+    expect(() => registerBody(body(12))).toThrow();
   });
 });
 

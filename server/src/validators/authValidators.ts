@@ -14,9 +14,8 @@ export const registerSchema = z.object({
     fullName: z.string().min(2),
     // Required only for STUDENT role; validated in the service layer
     // because cross-field rules don't belong in a shape-only schema.
-    // 4-11 matches the grades that actually have quiz content (and the
-    // Register page's own picker) — a grade 1-3 account would have nothing.
-    grade: z.number().int().min(4).max(11).optional(),
+    // Every school grade, 1-11 (matches the Register page's picker).
+    grade: z.number().int().min(1).max(11).optional(),
     parentEmail: emailField.optional(),
   }),
 });

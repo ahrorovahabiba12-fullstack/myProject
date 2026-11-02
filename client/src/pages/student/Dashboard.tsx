@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useOutletContext } from "react-router-dom";
-import { PlayCircle, Sparkles, Info, Sunrise, Check, Flame, Star, Flag, Trophy } from "lucide-react";
-import { studentApi, scheduleApi, recommendationApi, dailyCoachApi, DashboardSummary } from "../../lib/api";
+import { Sparkles, Info, Sunrise, Check, Flame, Star, BookOpenCheck, Trophy, Compass, MessageCircle, TrendingUp, Lock, ChevronRight, FileText } from "lucide-react";
+import clsx from "clsx";
+import { studentApi, recommendationApi, dailyCoachApi, DashboardSummary } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { DailyMotivation } from "../../components/dashboard/DailyMotivation";
@@ -15,26 +16,19 @@ const HIGH_ACTIVITY_SUBJECT_THRESHOLD = 4;
  * in the app's own brand palette rather than a stock illustration. */
 function HeroIllustration() {
   return (
-    <svg width="180" height="160" viewBox="0 0 240 220" className="shrink-0 hidden sm:block" aria-hidden="true">
-      <defs>
-        <linearGradient id="heroBlobGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#6c3ffb" />
-          <stop offset="100%" stopColor="#4f6df5" />
-        </linearGradient>
-      </defs>
-      <circle cx="130" cy="120" r="105" fill="url(#heroBlobGrad)" opacity="0.12" />
-      <circle cx="55" cy="180" r="30" fill="#8b6bff" opacity="0.18" />
-      <circle cx="34" cy="55" r="5" fill="#f59e0b" />
-      <circle cx="212" cy="70" r="4" fill="#6c3ffb" />
-      <circle cx="203" cy="172" r="6" fill="#4f6df5" opacity="0.5" />
-      <path d="M45 26 L48 34 L56 37 L48 40 L45 48 L42 40 L34 37 L42 34 Z" fill="#f59e0b" />
-      <rect x="55" y="150" width="150" height="20" rx="6" fill="#4f6df5" />
-      <rect x="70" y="130" width="120" height="18" rx="6" fill="#8b6bff" />
-      <rect x="82" y="112" width="96" height="16" rx="6" fill="#ffffff" stroke="#cfc4ff" strokeWidth="2" />
+    <svg width="170" height="150" viewBox="0 0 240 220" className="shrink-0 hidden sm:block" aria-hidden="true">
+      <circle cx="130" cy="120" r="105" fill="#ffffff" opacity="0.12" />
+      <circle cx="55" cy="180" r="30" fill="#ffffff" opacity="0.1" />
+      <circle cx="34" cy="55" r="5" fill="#fcd34d" />
+      <circle cx="212" cy="70" r="4" fill="#ffffff" />
+      <path d="M45 26 L48 34 L56 37 L48 40 L45 48 L42 40 L34 37 L42 34 Z" fill="#fcd34d" />
+      <rect x="55" y="150" width="150" height="20" rx="6" fill="#c7d2fe" />
+      <rect x="70" y="130" width="120" height="18" rx="6" fill="#a5b4fc" />
+      <rect x="82" y="112" width="96" height="16" rx="6" fill="#ffffff" />
       <polygon points="130,62 195,90 130,118 65,90" fill="#1a1533" />
-      <circle cx="130" cy="90" r="6" fill="#6c3ffb" />
-      <path d="M182 84 L188 118" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="188.5" cy="121" r="5" fill="#f59e0b" />
+      <circle cx="130" cy="90" r="6" fill="#8b6bff" />
+      <path d="M182 84 L188 118" stroke="#fcd34d" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="188.5" cy="121" r="5" fill="#fcd34d" />
     </svg>
   );
 }
@@ -42,12 +36,64 @@ function HeroIllustration() {
 function StatPill({ icon, iconBg, value, label }: { icon: React.ReactNode; iconBg: string; value: string | number; label: string }) {
   return (
     <Card className="flex items-center gap-3.5 py-3.5 pl-3.5">
-      <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>{icon}</div>
-      <div>
+      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>{icon}</div>
+      <div className="min-w-0">
         <p className="text-xl font-extrabold leading-tight">{value}</p>
-        <p className="text-xs text-[var(--text-secondary)]">{label}</p>
+        <p className="text-xs text-[var(--text-secondary)] truncate">{label}</p>
       </div>
     </Card>
+  );
+}
+
+type Tone = "violet" | "amber" | "sky" | "emerald" | "rose";
+
+const TONES: Record<Tone, { tile: string; icon: string }> = {
+  violet: { tile: "from-brand-500 to-accentBlue text-white", icon: "bg-white/20 text-white" },
+  amber: { tile: "from-amber-400 to-orange-500 text-white", icon: "bg-white/20 text-white" },
+  sky: { tile: "from-sky-400 to-cyan-500 text-white", icon: "bg-white/20 text-white" },
+  emerald: { tile: "from-emerald-400 to-teal-500 text-white", icon: "bg-white/20 text-white" },
+  rose: { tile: "from-rose-400 to-pink-500 text-white", icon: "bg-white/20 text-white" },
+};
+
+/** A big, colourful, tappable tile — the main way into each section, sized
+ * for small hands (the app is used from grade 1). */
+function ActionTile({
+  to,
+  icon,
+  title,
+  description,
+  tone,
+  locked,
+}: {
+  to: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  tone: Tone;
+  locked?: boolean;
+}) {
+  const body = (
+    <div
+      className={clsx(
+        "relative h-full rounded-card p-4 sm:p-5 flex flex-col gap-3 bg-gradient-to-br shadow-card overflow-hidden transition-transform",
+        TONES[tone].tile,
+        locked ? "opacity-60 grayscale-[30%]" : "hover:-translate-y-0.5 active:scale-[0.99]"
+      )}
+    >
+      <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/10" aria-hidden="true" />
+      <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center", TONES[tone].icon)}>{locked ? <Lock size={22} /> : icon}</div>
+      <div className="flex-1">
+        <p className="font-extrabold text-base sm:text-lg leading-snug">{title}</p>
+        <p className="text-xs sm:text-sm text-white/85 mt-1">{description}</p>
+      </div>
+      {!locked && <ChevronRight className="absolute right-4 top-5 text-white/70 hidden sm:block" size={22} aria-hidden="true" />}
+    </div>
+  );
+  if (locked) return <div aria-disabled="true">{body}</div>;
+  return (
+    <Link to={to} className="block h-full rounded-card focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      {body}
+    </Link>
   );
 }
 
@@ -82,7 +128,7 @@ function DailyCoachCard() {
   return (
     <Card>
       <div className="flex items-start gap-3">
-        <div className="shrink-0 rounded-full bg-brand-100 p-2 text-brand-600">
+        <div className="shrink-0 rounded-2xl bg-amber-100 p-2.5 text-amber-600">
           <Sunrise size={20} />
         </div>
         <div className="flex-1">
@@ -117,155 +163,104 @@ export default function Dashboard() {
   const { dashboard } = useOutletContext<{ dashboard?: DashboardSummary }>();
 
   const profile = useQuery({ queryKey: ["profile"], queryFn: studentApi.getProfile });
-  const schedule = useQuery({ queryKey: ["schedule-current"], queryFn: scheduleApi.getCurrentWeek });
   const recommendation = useQuery({ queryKey: ["recommendation-learning"], queryFn: recommendationApi.getLearning });
 
-  const todayDow = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const todayTasks = (schedule.data ?? []).filter((s) => s.dayOfWeek === todayDow);
-  // Completed tasks (including ones auto-inserted by a quiz taken outside the
-  // original plan) would otherwise just keep piling up here — once done,
-  // there's nothing left to act on, so only pending ones stay actionable.
-  const pendingTodayTasks = todayTasks.filter((task) => task.status !== "COMPLETED");
-  const allDoneToday = todayTasks.length > 0 && pendingTodayTasks.length === 0;
-  const todayTasksLabel = todayTasks.length > 0 ? `${todayTasks.length - pendingTodayTasks.length}/${todayTasks.length}` : "—";
-
-  const weakestSubject = profile.data?.subjectLevels.length
-    ? profile.data.subjectLevels.reduce((min, s) => (s.score < min.score ? s : min))
-    : null;
-  const suggestWeakestSubject = weakestSubject && weakestSubject.level !== "STRONG";
+  const careerVisible = dashboard?.careerModuleVisible ?? profile.data?.careerModuleVisible ?? false;
+  const levels = profile.data?.subjectLevels ?? [];
+  const avgScore = levels.length ? Math.round(levels.reduce((sum, s) => sum + s.score, 0) / levels.length) : 0;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* HERO — greeting + a bit of decoration */}
-      <Card className="flex items-center justify-between gap-6 py-8 bg-gradient-to-br from-brand-50 to-white">
-        <div>
-          <p className="text-xs font-extrabold tracking-wide uppercase text-brand-600 mb-1.5">{t("dashboard.welcomeEyebrow")}</p>
-          <h1 className="text-[28px] font-extrabold mb-1.5 text-[#1a1530]">{t("dashboard.greeting", { name: dashboard?.fullName ?? profile.data?.fullName ?? "" })}</h1>
-          <p className="text-[var(--text-secondary)]">{t("dashboard.subtitle")}</p>
+      {/* HERO — greeting */}
+      <div className="relative overflow-hidden rounded-card bg-brand-gradient text-white px-6 py-7 sm:px-8 flex items-center justify-between gap-6 shadow-card">
+        <div className="absolute -left-10 -top-10 w-40 h-40 rounded-full bg-white/10" aria-hidden="true" />
+        <div className="relative">
+          <p className="text-xs font-extrabold tracking-wide uppercase text-white/80 mb-1.5">{t("dashboard.welcomeEyebrow")}</p>
+          <h1 className="text-2xl sm:text-[28px] font-extrabold mb-1.5">
+            {t("dashboard.greeting", { name: dashboard?.fullName ?? profile.data?.fullName ?? "" })}
+          </h1>
+          <p className="text-white/85 max-w-md">{t("dashboard.subtitle")}</p>
+          {dashboard?.grade && (
+            <span className="inline-block mt-3 text-xs font-bold bg-white/20 rounded-full px-3 py-1">
+              {dashboard.grade}-{t("profile.grade")}
+            </span>
+          )}
         </div>
         <HeroIllustration />
-      </Card>
+      </div>
 
-      {/* Stat pills — always-visible summary rail */}
+      {/* Main sections — big tiles */}
+      <section aria-labelledby="quick-actions">
+        <h2 id="quick-actions" className="font-bold text-lg mb-3">
+          {t("dashboard.quickActionsTitle")}
+        </h2>
+        <div className={clsx("grid grid-cols-2 gap-3 sm:gap-4", careerVisible ? "md:grid-cols-3 xl:grid-cols-5" : "xl:grid-cols-4")}>
+          <ActionTile
+            to="/quiz"
+            tone="violet"
+            icon={<BookOpenCheck size={24} />}
+            title={t("dashboard.actionQuizTitle")}
+            description={t("dashboard.actionQuizDesc")}
+          />
+          <ActionTile
+            to="/career"
+            tone="amber"
+            icon={<Compass size={24} />}
+            title={t("dashboard.actionCareerTitle")}
+            description={careerVisible ? t("dashboard.actionCareerDesc") : t("dashboard.actionCareerLocked")}
+            locked={!careerVisible}
+          />
+          {careerVisible && (
+            <ActionTile
+              to="/dtm"
+              tone="rose"
+              icon={<FileText size={24} />}
+              title={t("dashboard.actionDtmTitle")}
+              description={t("dashboard.actionDtmDesc")}
+            />
+          )}
+          <ActionTile
+            to="/chat"
+            tone="sky"
+            icon={<MessageCircle size={24} />}
+            title={t("dashboard.actionChatTitle")}
+            description={t("dashboard.actionChatDesc")}
+          />
+          <ActionTile
+            to="/progress"
+            tone="emerald"
+            icon={<TrendingUp size={24} />}
+            title={t("dashboard.actionProgressTitle")}
+            description={t("dashboard.actionProgressDesc")}
+          />
+        </div>
+      </section>
+
+      {/* Stat pills */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatPill icon={<Flame size={20} className="text-amber-600" />} iconBg="bg-amber-100" value={dashboard?.streakDays ?? 0} label={t("dashboard.streakUnit")} />
         <StatPill icon={<Star size={20} className="text-brand-600" />} iconBg="bg-brand-100" value={dashboard?.points ?? 0} label={t("dashboard.pointsUnit")} />
-        <StatPill icon={<Flag size={20} className="text-blue-600" />} iconBg="bg-blue-100" value={todayTasksLabel} label={t("dashboard.todayTasksUnit")} />
-        <StatPill icon={<Trophy size={20} className="text-amber-600" />} iconBg="bg-amber-100" value={dashboard?.badgeCount ?? 0} label={t("dashboard.badgesUnit")} />
+        <StatPill
+          icon={<BookOpenCheck size={20} className="text-sky-600" />}
+          iconBg="bg-sky-100"
+          value={dashboard?.todaySubjectCount ?? 0}
+          label={t("dashboard.todaySubjectsUnit")}
+        />
+        <StatPill icon={<Trophy size={20} className="text-emerald-600" />} iconBg="bg-emerald-100" value={dashboard?.badgeCount ?? 0} label={t("dashboard.badgesUnit")} />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* LEFT — main flow */}
-        <div className="flex-1 min-w-0 w-full flex flex-col gap-6">
-          {dashboard && dashboard.todaySubjectCount > HIGH_ACTIVITY_SUBJECT_THRESHOLD && (
-            <Card className="flex items-center gap-4 py-3 bg-amber-50 border-amber-200 animate-scale-in">
-              <span className="shrink-0 rounded-full bg-amber-100 p-2 text-amber-600">
-                <Flame size={20} />
-              </span>
-              <p className="font-semibold text-sm text-amber-700">
-                {t("dashboard.highActivityMessage", { count: dashboard.todaySubjectCount })}
-              </p>
-            </Card>
-          )}
+      {dashboard && dashboard.todaySubjectCount > HIGH_ACTIVITY_SUBJECT_THRESHOLD && (
+        <Card className="flex items-center gap-4 py-3 bg-amber-50 border-amber-200 animate-scale-in">
+          <span className="shrink-0 rounded-full bg-amber-100 p-2 text-amber-600">
+            <Flame size={20} />
+          </span>
+          <p className="font-semibold text-sm text-amber-700">{t("dashboard.highActivityMessage", { count: dashboard.todaySubjectCount })}</p>
+        </Card>
+      )}
 
-          {/* Today's tasks */}
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-lg">{t("dashboard.today")}</h2>
-              <span className="text-xs font-semibold bg-brand-100 text-brand-700 px-2.5 py-1 rounded-full">{t("dashboard.aiBadge")}</span>
-            </div>
-
-            {schedule.isLoading ? (
-              <div className="flex flex-col gap-3">
-                <Skeleton className="h-14" />
-                <Skeleton className="h-14" />
-              </div>
-            ) : todayTasks.length === 0 ? (
-              // Sunday is a rest day with no plan by design (see Schedule page).
-              todayDow === 7 ? (
-                <EmptyState icon="🌿" title={t("schedule.sundayEmptyTitle")} description={t("schedule.sundayEmptyDesc")} />
-              ) : (
-                <EmptyState icon="📋" title={t("dashboard.noTasksTitle")} description={t("dashboard.noTasksDesc")} />
-              )
-            ) : allDoneToday ? (
-              <div className="flex flex-col items-center text-center gap-3 py-4">
-                <span className="text-3xl" aria-hidden="true">
-                  🎉
-                </span>
-                <p className="font-semibold">{t("dashboard.allTasksDoneTitle")}</p>
-                {suggestWeakestSubject ? (
-                  <>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {t("dashboard.extraPracticeSuggestion", { subject: weakestSubject!.subjectNameUz })}
-                    </p>
-                    <Link to={`/quiz?subject=${weakestSubject!.subjectCode}`} className="w-full">
-                      <Button className="w-full">{t("dashboard.startExtraPractice")}</Button>
-                    </Link>
-                  </>
-                ) : (
-                  <p className="text-sm text-[var(--text-secondary)]">{t("dashboard.allTasksDoneDesc")}</p>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {pendingTodayTasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
-                    <div>
-                      <p className="font-semibold">{task.subject?.name ?? task.title}</p>
-                      <p className="text-sm text-[var(--text-secondary)]">{task.minutes} {t("dashboard.minutes")}</p>
-                    </div>
-                    <Link to={task.subject?.code ? `/quiz?subject=${task.subject.code}` : "/schedule"}>
-                      <PlayCircle className="text-brand-500" size={28} />
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!allDoneToday && (
-              <Link to="/schedule">
-                <Button className="w-full mt-4">{t("dashboard.startFirstTask")}</Button>
-              </Link>
-            )}
-          </Card>
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <DailyCoachCard />
-        </div>
-
-        {/* RIGHT — persistent summary rail */}
-        <div className="w-full lg:w-[340px] shrink-0 flex flex-col gap-6 lg:sticky lg:top-6">
-          <DailyMotivation />
-
-          <Card>
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className="font-bold text-lg">{t("dashboard.learningHealth")}</h2>
-              <Info size={14} className="text-[var(--text-secondary)]" />
-            </div>
-            {profile.isLoading ? (
-              <Skeleton className="h-24" />
-            ) : (
-              <>
-                <p className="text-4xl font-extrabold text-brand-600 mb-3">
-                  {Math.round(
-                    (profile.data?.subjectLevels.reduce((sum, s) => sum + s.score, 0) ?? 0) /
-                      Math.max(profile.data?.subjectLevels.length ?? 1, 1)
-                  )}
-                  <span className="text-lg text-[var(--text-secondary)] font-medium">/100</span>
-                </p>
-                <div className="flex flex-col gap-2">
-                  {profile.data?.subjectLevels.slice(0, 4).map((s) => (
-                    <div key={s.subjectCode} className="flex items-center gap-2">
-                      <span className="text-sm w-24 shrink-0">{s.subjectNameUz}</span>
-                      <div className="flex-1 h-2 bg-brand-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-gradient" style={{ width: `${s.score}%` }} />
-                      </div>
-                      <span className="text-xs text-[var(--text-secondary)] w-8 text-right">{Math.round(s.score)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </Card>
 
           <Card>
             <div className="flex items-center gap-2 mb-3">
@@ -290,6 +285,39 @@ export default function Dashboard() {
                 {t("dashboard.discussWithAI")}
               </Button>
             </Link>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          <DailyMotivation />
+
+          <Card>
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="font-bold text-lg">{t("dashboard.learningHealth")}</h2>
+            </div>
+            {profile.isLoading ? (
+              <Skeleton className="h-24" />
+            ) : levels.length === 0 ? (
+              <EmptyState icon="📚" title={t("progress.noLevelsTitle")} description={t("progress.noLevelsDesc")} />
+            ) : (
+              <>
+                <p className="text-4xl font-extrabold text-brand-600 mb-3">
+                  {avgScore}
+                  <span className="text-lg text-[var(--text-secondary)] font-medium">/100</span>
+                </p>
+                <div className="flex flex-col gap-2">
+                  {levels.slice(0, 5).map((s) => (
+                    <div key={s.subjectCode} className="flex items-center gap-2">
+                      <span className="text-sm w-24 shrink-0 truncate">{s.subjectNameUz}</span>
+                      <div className="flex-1 h-2 bg-brand-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-gradient" style={{ width: `${s.score}%` }} />
+                      </div>
+                      <span className="text-xs text-[var(--text-secondary)] w-8 text-right">{Math.round(s.score)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </Card>
         </div>
       </div>

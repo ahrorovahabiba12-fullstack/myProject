@@ -17,12 +17,12 @@ describe("Auth + Career grade-gate — end to end", () => {
   // Auth is httpOnly-cookie-based (see authCookies.ts) — request.agent(app)
   // keeps a cookie jar across requests within one test, the same way a real
   // browser session would, instead of extracting a token from the JSON body.
-  it("registers a grade-8 student and rejects career recommendations with 403", async () => {
-    const email = `e2e-grade8-${Date.now()}@test.uz`;
+  it("registers a grade-7 student and rejects career recommendations with 403", async () => {
+    const email = `e2e-grade7-${Date.now()}@test.uz`;
     const agent = request.agent(app);
     const register = await agent
       .post("/api/auth/register")
-      .send({ email, password: "Test1234!", fullName: "Test Student", role: "STUDENT", grade: 8 });
+      .send({ email, password: "Test1234!", fullName: "Test Student", role: "STUDENT", grade: 7 });
 
     expect(register.status).toBe(201);
 

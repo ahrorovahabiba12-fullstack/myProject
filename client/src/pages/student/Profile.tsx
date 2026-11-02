@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
-import { X, Lightbulb, Flag, Briefcase, BookOpen, MapPin, Users } from "lucide-react";
-import { studentApi, careerApi, subjectApi, StudentProfile } from "../../lib/api";
+import { X, Lightbulb, Flag, Briefcase, MapPin, Users } from "lucide-react";
+import { studentApi, careerApi, StudentProfile } from "../../lib/api";
 import { Card, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { useTranslation } from "react-i18next";
@@ -73,50 +73,6 @@ function TagEditor({
           placeholder={t("profile.addPlaceholder")}
           className="input-field flex-1"
         />
-      </div>
-    </div>
-  );
-}
-
-// Order matters here (unlike the free-text TagEditor tags): the FIRST
-// selected subject is what university recommendations are based on, so
-// clicking one appends it to the end and clicking it again removes it,
-// letting the student re-pick to change which one is "first".
-function FavoriteSubjectPicker({
-  values,
-  onChange,
-}: {
-  values: string[];
-  onChange: (v: string[]) => void;
-}) {
-  const { t } = useTranslation();
-  const { data: subjects } = useQuery({ queryKey: ["subjects"], queryFn: subjectApi.list });
-
-  return (
-    <div>
-      <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] mb-2">
-        <BookOpen size={15} /> {t("profile.favoriteSubjects")}
-      </label>
-      <p className="text-xs text-[var(--text-secondary)] mb-2">{t("profile.favoriteSubjectsHint")}</p>
-      <div className="flex flex-wrap gap-2">
-        {(subjects ?? []).map((s) => {
-          const index = values.indexOf(s.code);
-          const selected = index !== -1;
-          return (
-            <button
-              key={s.code}
-              type="button"
-              onClick={() => onChange(selected ? values.filter((v) => v !== s.code) : [...values, s.code])}
-              className={clsx(
-                "inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border transition-colors",
-                selected ? "bg-brand-500 text-white border-brand-500" : "border-[var(--border-subtle)] hover:bg-brand-50/50"
-              )}
-            >
-              {selected && <span className="text-xs font-bold">{index + 1}</span>}
-              {s.name}
-            </button>
-          );
-        })}
       </div>
     </div>
   );
@@ -217,7 +173,6 @@ export default function Profile() {
   const [interests, setInterests] = useState<string[]>([]);
   const [goals, setGoals] = useState<string[]>([]);
   const [careerInterests, setCareerInterests] = useState<string[]>([]);
-  const [favoriteSubjects, setFavoriteSubjects] = useState<string[]>([]);
   const [region, setRegion] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -227,27 +182,22 @@ export default function Profile() {
       setInterests(data.interests);
       setGoals(data.goals);
       setCareerInterests(data.careerInterests);
-      setFavoriteSubjects(data.favoriteSubjects);
       setRegion(data.region);
     }
   }, [data]);
 
-  // Favorite subjects are ORDER-sensitive (the first one drives university
-  // recommendations) — a plain sameTags() ignores order, so it's compared
-  // as a plain array here instead.
   const dirty =
     !!data &&
     (!sameTags(interests, data.interests) ||
       !sameTags(goals, data.goals) ||
       !sameTags(careerInterests, data.careerInterests) ||
-      favoriteSubjects.join(",") !== data.favoriteSubjects.join(",") ||
       region !== data.region);
 
   const save = async () => {
     setSaving(true);
     setSaved(false);
     try {
-      await studentApi.updateProfile({ interests, goals, careerInterests, favoriteSubjects, region });
+      await studentApi.updateProfile({ interests, goals, careerInterests, region });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
       await queryClient.invalidateQueries({ queryKey: ["universities"] });
       setSaved(true);
@@ -280,12 +230,7 @@ export default function Profile() {
       </div>
 
       <Card className="flex flex-col gap-6">
-        {data?.careerModuleVisible && (
-          <>
-            <RegionPicker value={region} onChange={setRegion} />
-            <FavoriteSubjectPicker values={favoriteSubjects} onChange={setFavoriteSubjects} />
-          </>
-        )}
+        {data?.careerModuleVisible && <RegionPicker value={region} onChange={setRegion} />}
         <TagEditor
           label={t("profile.interests")}
           icon={<Lightbulb size={15} />}

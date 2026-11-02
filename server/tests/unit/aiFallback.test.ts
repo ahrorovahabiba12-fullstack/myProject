@@ -8,7 +8,6 @@ function makeProvider(name: string, overrides: Partial<AIProvider> = {}): AIProv
     getLearningRecommendation: vi.fn(),
     getCareerRecommendation: vi.fn(),
     generateParentReport: vi.fn(),
-    generateLearningPlan: vi.fn(),
     chat: vi.fn(),
     analyzeProgress: vi.fn(),
     ...overrides,
@@ -39,14 +38,14 @@ describe("FallbackAIProvider — AI failure falls back to RuleBasedProvider (nev
 
   it("falls back for every AIProvider method, not just chat", async () => {
     const primary = makeProvider("openai", {
-      generateLearningPlan: vi.fn().mockRejectedValue(new Error("bad json")),
+      analyzeProgress: vi.fn().mockRejectedValue(new Error("bad json")),
     });
     const fallback = makeProvider("rule-based", {
-      generateLearningPlan: vi.fn().mockResolvedValue({ items: [] }),
+      analyzeProgress: vi.fn().mockResolvedValue({ items: [] }),
     });
     const provider = new FallbackAIProvider(primary, fallback);
 
-    const plan = await provider.generateLearningPlan({} as any);
+    const plan = await provider.analyzeProgress({} as any);
 
     expect(plan).toEqual({ items: [] });
   });

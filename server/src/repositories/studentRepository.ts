@@ -46,7 +46,7 @@ export class StudentRepository {
 
   updateProfile(
     id: string,
-    data: Partial<{ interests: string[]; favoriteSubjects: string[]; goals: string[]; careerInterests: string[]; region: string | null }>
+    data: Partial<{ interests: string[]; goals: string[]; careerInterests: string[]; region: string | null }>
   ) {
     return this.db.student.update({ where: { id }, data });
   }
