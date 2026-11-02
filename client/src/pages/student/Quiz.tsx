@@ -2,37 +2,29 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen, BookOpenText, Calculator, Globe, Languages, Atom, FlaskConical, Sprout, Laptop, Landmark, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 
-// Subject tiles: white card, a soft pastel "blob" behind a big icon, name and
-// an arrow chip below (Habiba's design).
-const SUBJECT_STYLE: Record<string, { emoji: string; blob: string }> = {
-  MATH: { emoji: "🧮", blob: "bg-violet-200/70 dark:bg-violet-500/25" },
-  MOTHER_LANG: { emoji: "📖", blob: "bg-lime-200/70 dark:bg-lime-500/25" },
-  ENGLISH: { emoji: "🌍", blob: "bg-sky-200/70 dark:bg-sky-500/25" },
-  RUSSIAN: { emoji: "📚", blob: "bg-rose-200/70 dark:bg-rose-500/25" },
-  PHYSICS: { emoji: "⚛️", blob: "bg-emerald-200/70 dark:bg-emerald-500/25" },
-  CHEMISTRY: { emoji: "🧪", blob: "bg-amber-200/70 dark:bg-amber-500/25" },
-  BIOLOGY: { emoji: "🌱", blob: "bg-indigo-200/60 dark:bg-indigo-500/25" },
-  INFORMATICS: { emoji: "💻", blob: "bg-blue-200/70 dark:bg-blue-500/25" },
-  HISTORY: { emoji: "🏛️", blob: "bg-orange-200/70 dark:bg-orange-500/25" },
+// Subject tiles: white card, a gradient circle with a white line icon (variant A
+// Habiba picked), name and an arrow chip below.
+type SubjectLook = { emoji: string; Icon: LucideIcon; from: string; to: string };
+const SUBJECT_STYLE: Record<string, SubjectLook> = {
+  MATH: { emoji: "🧮", Icon: Calculator, from: "#5b8cff", to: "#7c5cff" },
+  MOTHER_LANG: { emoji: "📖", Icon: BookOpenText, from: "#8bc34a", to: "#3fae5a" },
+  ENGLISH: { emoji: "🌍", Icon: Globe, from: "#36c2e0", to: "#2f8ee8" },
+  RUSSIAN: { emoji: "📚", Icon: Languages, from: "#f59e6b", to: "#ef6c5a" },
+  PHYSICS: { emoji: "⚛️", Icon: Atom, from: "#4cc9a6", to: "#14a394" },
+  CHEMISTRY: { emoji: "🧪", Icon: FlaskConical, from: "#f7c948", to: "#f0a020" },
+  BIOLOGY: { emoji: "🌱", Icon: Sprout, from: "#9ccc65", to: "#43a047" },
+  INFORMATICS: { emoji: "💻", Icon: Laptop, from: "#7a5cff", to: "#3d6fe0" },
+  HISTORY: { emoji: "🏛️", Icon: Landmark, from: "#e0a15f", to: "#c2703d" },
 };
-const styleFor = (code: string) => SUBJECT_STYLE[code] ?? { emoji: "📘", blob: "bg-brand-200/70 dark:bg-brand-500/25" };
-// Illustrations from Habiba's design (client/public/subjects/<CODE>.png).
-const SUBJECT_IMAGES = new Set(["MATH", "MOTHER_LANG", "ENGLISH", "RUSSIAN", "PHYSICS", "CHEMISTRY", "BIOLOGY", "INFORMATICS", "HISTORY"]);
-// Irregular rounded shapes so the blobs don't all look the same.
-const BLOB_SHAPES = [
-  "rounded-[38%_62%_55%_45%/45%_40%_60%_55%] -rotate-6",
-  "rounded-[60%_40%_45%_55%/55%_60%_40%_45%] rotate-3",
-  "rounded-full",
-  "rounded-[45%_55%_60%_40%/60%_45%_55%_40%] rotate-6",
-  "rounded-[55%_45%_40%_60%/40%_55%_45%_60%] -rotate-3",
-];
+const styleFor = (code: string): SubjectLook =>
+  SUBJECT_STYLE[code] ?? { emoji: "📘", Icon: BookOpen, from: "#8b6cff", to: "#6c3ffb" };
 
 function StepHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
   const { t } = useTranslation();
@@ -75,31 +67,25 @@ function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
         <EmptyState icon="📚" title={t("quiz.noSubjects")} />
       ) : (
         <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-          {subjects.data.subjects.map((s, i) => (
+          {subjects.data.subjects.map((s) => (
             <button
               key={s.code}
               onClick={() => onPick(s)}
               className="group text-left rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm transition hover:shadow-card hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
             >
               <div className="relative h-20 sm:h-32 flex items-center justify-center mb-2 sm:mb-3">
-                {SUBJECT_IMAGES.has(s.code) ? (
-                  <img
-                    src={`/subjects/${s.code}.png`}
-                    alt=""
-                    loading="lazy"
-                    className="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
-                  />
-                ) : (
-                  <>
-                    <div
-                      className={clsx("absolute inset-x-3 inset-y-0 sm:inset-x-6", styleFor(s.code).blob, BLOB_SHAPES[i % BLOB_SHAPES.length])}
+                {(() => {
+                  const look = styleFor(s.code);
+                  return (
+                    <span
+                      className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white transition-transform group-hover:scale-105"
+                      style={{ background: `linear-gradient(140deg, ${look.from}, ${look.to})`, boxShadow: `0 10px 18px -8px ${look.to}` }}
                       aria-hidden="true"
-                    />
-                    <span className="relative text-5xl sm:text-6xl" aria-hidden="true">
-                      {styleFor(s.code).emoji}
+                    >
+                      <look.Icon className="w-8 h-8 sm:w-11 sm:h-11" strokeWidth={2} />
                     </span>
-                  </>
-                )}
+                  );
+                })()}
               </div>
               <div className="flex items-center justify-between gap-1">
                 <p className="font-extrabold text-[13px] leading-tight sm:text-lg">{s.name}</p>
