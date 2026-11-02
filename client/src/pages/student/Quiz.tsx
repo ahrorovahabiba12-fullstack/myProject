@@ -23,6 +23,8 @@ const SUBJECT_STYLE: Record<string, { emoji: string; blob: string }> = {
   HISTORY: { emoji: "🏛️", blob: "bg-orange-200/70 dark:bg-orange-500/25" },
 };
 const styleFor = (code: string) => SUBJECT_STYLE[code] ?? { emoji: "📘", blob: "bg-brand-200/70 dark:bg-brand-500/25" };
+// Illustrations from Habiba's design (client/public/subjects/<CODE>.png).
+const SUBJECT_IMAGES = new Set(["MATH", "MOTHER_LANG", "ENGLISH", "RUSSIAN", "PHYSICS", "CHEMISTRY", "BIOLOGY", "INFORMATICS", "HISTORY"]);
 // Irregular rounded shapes so the blobs don't all look the same.
 const BLOB_SHAPES = [
   "rounded-[38%_62%_55%_45%/45%_40%_60%_55%] -rotate-6",
@@ -72,26 +74,37 @@ function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
       ) : !subjects.data?.subjects.length ? (
         <EmptyState icon="📚" title={t("quiz.noSubjects")} />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
           {subjects.data.subjects.map((s, i) => (
             <button
               key={s.code}
               onClick={() => onPick(s)}
-              className="group text-left rounded-3xl p-4 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm transition hover:shadow-card hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
+              className="group text-left rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm transition hover:shadow-card hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
             >
-              <div className="relative h-24 sm:h-28 flex items-center justify-center mb-3">
-                <div
-                  className={clsx("absolute inset-x-3 inset-y-0 sm:inset-x-6", styleFor(s.code).blob, BLOB_SHAPES[i % BLOB_SHAPES.length])}
-                  aria-hidden="true"
-                />
-                <span className="relative text-5xl sm:text-6xl drop-shadow-sm transition-transform group-hover:scale-110" aria-hidden="true">
-                  {styleFor(s.code).emoji}
-                </span>
+              <div className="relative h-20 sm:h-32 flex items-center justify-center mb-2 sm:mb-3">
+                {SUBJECT_IMAGES.has(s.code) ? (
+                  <img
+                    src={`/subjects/${s.code}.png`}
+                    alt=""
+                    loading="lazy"
+                    className="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <>
+                    <div
+                      className={clsx("absolute inset-x-3 inset-y-0 sm:inset-x-6", styleFor(s.code).blob, BLOB_SHAPES[i % BLOB_SHAPES.length])}
+                      aria-hidden="true"
+                    />
+                    <span className="relative text-5xl sm:text-6xl" aria-hidden="true">
+                      {styleFor(s.code).emoji}
+                    </span>
+                  </>
+                )}
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-extrabold text-base sm:text-lg">{s.name}</p>
-                <span className="w-8 h-8 shrink-0 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 flex items-center justify-center" aria-hidden="true">
-                  <ChevronRight size={18} />
+              <div className="flex items-center justify-between gap-1">
+                <p className="font-extrabold text-[13px] leading-tight sm:text-lg">{s.name}</p>
+                <span className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 flex items-center justify-center" aria-hidden="true">
+                  <ChevronRight size={16} />
                 </span>
               </div>
             </button>
