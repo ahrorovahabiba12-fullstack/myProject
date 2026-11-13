@@ -527,6 +527,17 @@
     "chipTime": "~5 daqiqa",
     "chipResult": "Mos kasblar ro'yxati",
     "online": "onlayn",
-    "chatHello": "Salom! Men sizning AI maslahatchingizman. Fanlar, kasb yoki universitet haqida so'rang."
+    "chatHello": "Salom! Men sizning AI maslahatchingizman. Fanlar, kasb yoki universitet haqida so'rang.",
+    "chatHeadline": "Robotdan istagan narsani so'rang",
+    "chatSub": "Kasb, DTM, universitet va fanlar bo'yicha shaxsiy maslahat",
+    "topicCareer": "Kasb",
+    "topicCareerQ": "Menga qaysi kasb mos keladi?",
+    "topicDtm": "DTM",
+    "topicDtmQ": "DTMga qanday tayyorlanay?",
+    "topicUni": "Universitet",
+    "topicUniQ": "Qaysi universitetga kirsam bo'ladi?",
+    "topicStudy": "Fanlar",
+    "topicStudyQ": "Matematikani qanday yaxshilasam bo'ladi?",
+    "askAbout": "Mavzu tanlang"
   }
 }

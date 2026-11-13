@@ -1,12 +1,13 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Send } from "lucide-react";
+import { Bot, Send } from "lucide-react";
 import { chatApi, ChatHistory } from "../../lib/api";
 import { Button } from "../../components/ui/Button";
 import { Skeleton } from "../../components/ui/primitives";
 import { RobotMascot } from "../../components/three/RobotMascot";
 import clsx from "clsx";
+import { ChatStage, ChatTopics } from "./variants/ChatVariants";
 
 export default function AIChat() {
   const { t } = useTranslation();
@@ -52,8 +53,24 @@ export default function AIChat() {
     send(input);
   };
 
-  // ?v=a|b previews the new chat layouts.
+  // ?v=a|b|c|d previews the new chat layouts.
   const v = new URLSearchParams(window.location.search).get("v");
+  if (v === "c" || v === "d") {
+    const View = v === "c" ? ChatStage : ChatTopics;
+    return (
+      <View
+        messages={history.data?.messages ?? []}
+        loading={history.isLoading}
+        sending={sending}
+        sendError={sendError}
+        input={input}
+        setInput={setInput}
+        send={send}
+        onSubmit={handleSubmit}
+        bottomRef={bottomRef}
+      />
+    );
+  }
   if (v === "a" || v === "b") {
     const messages = history.data?.messages ?? [];
     const messenger = v === "b";
@@ -224,7 +241,7 @@ export default function AIChat() {
 function AiBubble({ children, avatar }: { children: React.ReactNode; avatar?: boolean }) {
   return (
     <div className="self-start flex items-end gap-2 max-w-[85%]">
-      {avatar && <span className="w-8 h-8 shrink-0 rounded-full bg-brand-gradient flex items-center justify-center text-base icon-3d">🤖</span>}
+      {avatar && <span className="w-8 h-8 shrink-0 rounded-full bg-brand-gradient flex items-center justify-center text-base icon-3d text-white"><Bot size={17} /></span>}
       <div className="bubble-ai rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">{children}</div>
     </div>
   );

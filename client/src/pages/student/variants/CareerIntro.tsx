@@ -1,17 +1,29 @@
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Clock, ListChecks, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, ListChecks, Sparkles, Laptop, Stethoscope, Palette, Scale, Building2, Microscope, Compass, type LucideIcon } from "lucide-react";
 import { RobotMascot } from "../../../components/three/RobotMascot";
 
 type Props = { onStart: () => void; hasResult: boolean; onBack: () => void };
 
-const CAREERS: [string, string][] = [
-  ["💻", "#7c4dff"],
-  ["🩺", "#22d3ee"],
-  ["🎨", "#f472b6"],
-  ["⚖️", "#fbbf24"],
-  ["🏗️", "#a78bfa"],
-  ["🔬", "#34d399"],
+const CAREERS: [LucideIcon, string][] = [
+  [Laptop, "#7c4dff"],
+  [Stethoscope, "#0ea5e9"],
+  [Palette, "#ec4899"],
+  [Scale, "#f59e0b"],
+  [Building2, "#8b5cf6"],
+  [Microscope, "#10b981"],
 ];
+
+/** A glossy glass tile with a line icon: drawn, not an emoji sticker. */
+function IconTile({ Icon, color, className = "" }: { Icon: LucideIcon; color: string; className?: string }) {
+  return (
+    <span
+      className={`career-tile inline-flex items-center justify-center rounded-2xl ${className}`}
+      style={{ ["--c" as string]: color }}
+    >
+      <Icon strokeWidth={1.75} className="w-1/2 h-1/2" />
+    </span>
+  );
+}
 
 /** Kasb A — "Robot yo'lboshchi": big space hero with the robot, glowing
  * start button, floating career emoji and 3D step cards. */
@@ -20,22 +32,21 @@ export function CareerIntroGuide({ onStart, hasResult, onBack }: Props) {
   return (
     <div>
       <div className="cc-hero relative overflow-hidden rounded-[1.75rem] text-white p-6 sm:p-10 grid md:grid-cols-[1fr_auto] items-center gap-4">
-        {CAREERS.map(([e, c], i) => (
+        {CAREERS.map(([Icon, c], i) => (
           <span
-            key={e}
-            className="absolute text-3xl sm:text-4xl select-none opacity-90"
+            key={c}
+            className={`absolute select-none ${i === 0 || i === 5 ? "hidden sm:block" : ""}`}
             style={{
               left: `${[52, 88, 60, 92, 72, 46][i]}%`,
               top: `${[8, 14, 72, 62, 88, 40][i]}%`,
-              filter: `drop-shadow(0 0 16px ${c})`,
               animation: `chip-float 5s ease-in-out ${-i}s infinite`,
             }}
           >
-            {e}
+            <IconTile Icon={Icon} color={c} className="w-11 h-11 sm:w-14 sm:h-14 text-white" />
           </span>
         ))}
         <div className="relative z-10 max-w-xl">
-          <p className="section-badge mb-4">🧭 {t("career.title")}</p>
+          <p className="section-badge mb-4 !inline-flex items-center gap-1.5"><Compass size={14} /> {t("career.title")}</p>
           <h1 className="text-3xl sm:text-5xl font-black leading-tight mb-3">{t("variants.careerHeadline")}</h1>
           <p className="text-white/80 mb-1">{t("career.introText")}</p>
           <p className="text-white/60 text-sm mb-7">{t("career.introHint")}</p>
@@ -71,7 +82,7 @@ export function CareerIntroDeck({ onStart, hasResult, onBack }: Props) {
   return (
     <div className="grid lg:grid-cols-2 gap-8 items-center">
       <div>
-        <p className="section-badge !text-brand-600 dark:!text-cyan-300 !border-brand-300/40 mb-4">🧭 {t("career.title")}</p>
+        <p className="section-badge !text-brand-600 dark:!text-cyan-300 !border-brand-300/40 mb-4 !inline-flex items-center gap-1.5"><Compass size={14} /> {t("career.title")}</p>
         <h1 className="text-3xl sm:text-5xl font-black leading-tight mb-4">{t("variants.careerHeadline")}</h1>
         <p className="text-[var(--text-secondary)] mb-6">{t("career.introText")}</p>
         <div className="flex flex-wrap gap-2 mb-8">
@@ -89,12 +100,12 @@ export function CareerIntroDeck({ onStart, hasResult, onBack }: Props) {
         )}
       </div>
       <div className="deck relative h-[340px] sm:h-[420px]">
-        {CAREERS.map(([e, c], i) => {
+        {CAREERS.map(([Icon, c], i) => {
           const mid = (CAREERS.length - 1) / 2;
           const k = i - mid;
           return (
             <div
-              key={e}
+              key={c}
               className="deck-card absolute left-1/2 bottom-6 w-36 h-52 sm:w-44 sm:h-64 rounded-[1.4rem] p-4 flex flex-col justify-between text-white"
               style={{
                 background: `linear-gradient(160deg, ${c}, #1e1b4b 140%)`,
@@ -105,8 +116,8 @@ export function CareerIntroDeck({ onStart, hasResult, onBack }: Props) {
                 zIndex: 10 - Math.round(Math.abs(k) * 2),
               }}
             >
-              <span className="text-5xl sm:text-6xl">{e}</span>
-              <span className="font-black text-lg leading-tight">{names[i] ?? ""}</span>
+              <IconTile Icon={Icon} color={c} className="relative w-14 h-14 sm:w-16 sm:h-16 text-white" />
+              <span className="relative font-black text-lg leading-tight">{names[i] ?? ""}</span>
             </div>
           );
         })}
