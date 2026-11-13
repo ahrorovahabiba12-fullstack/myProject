@@ -6,7 +6,8 @@ import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { Input, PasswordInput } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
-import { LogoIcon } from "../../components/icons/LogoIcon";
+import { SpaceBackground } from "../../components/three/SpaceBackground";
+import { RobotMascot } from "../../components/three/RobotMascot";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -37,13 +38,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-page)] px-4">
-      <div className="card w-full max-w-md">
+    <div className="dark space-page min-h-screen flex items-center justify-center text-[var(--text-primary)] px-4 py-10">
+      <SpaceBackground />
+      <div className="glass-card auth-card relative z-10 w-full max-w-md p-6 sm:p-8 mt-16">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-brand-gradient flex items-center justify-center text-white mb-3">
-            <LogoIcon size={22} />
-          </div>
-          <h1 className="text-2xl font-bold">{t("auth.loginTitle")}</h1>
+          <RobotMascot className="w-36 h-40 -mt-20 sm:-mt-24 mb-1" />
+          <h1 className="text-3xl font-black text-gradient">{t("auth.loginTitle")}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -69,14 +69,14 @@ export default function Login() {
               {error}
             </p>
           )}
-          <Button type="submit" loading={loading} className="w-full mt-2">
+          <Button type="submit" loading={loading} className="w-full mt-2 glow-violet">
             {t("auth.submitLogin")}
           </Button>
         </form>
 
         <p className="text-center text-sm text-[var(--text-secondary)] mt-6">
           {t("auth.noAccount")}{" "}
-          <Link to="/register" className="text-brand-600 font-semibold hover:underline">
+          <Link to="/register" className="text-cyan-300 font-semibold hover:underline">
             {t("auth.switchToRegister")}
           </Link>
         </p>

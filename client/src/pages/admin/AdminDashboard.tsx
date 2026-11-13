@@ -1,37 +1,41 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Users, GraduationCap, Heart, Activity, Trophy, BookOpen, HelpCircle, Briefcase, Building2 } from "lucide-react";
+import { ShieldCheck, Users, GraduationCap, Heart, Activity, Trophy, BookOpen, HelpCircle, Briefcase, Building2 } from "lucide-react";
 import clsx from "clsx";
 import { adminApi } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton, Modal } from "../../components/ui/primitives";
+import { RobotMascot } from "../../components/three/RobotMascot";
 
 function StatCard({
   icon,
   label,
   value,
   onClick,
+  color = "#7c4dff",
 }: {
   icon: React.ReactNode;
   label: string;
   value: number | string;
   onClick?: () => void;
+  color?: string;
 }) {
   return (
     <Card
-      className={clsx("flex items-center gap-3", onClick && "cursor-pointer transition-shadow hover:shadow-lg")}
+      data-tilt={onClick ? "" : undefined}
+      className={clsx("flex flex-col items-start sm:flex-row sm:items-center gap-3", onClick && "cursor-pointer transition-transform hover:-translate-y-0.5")}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => (e.key === "Enter" || e.key === " ") && onClick() : undefined}
     >
-      <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
+      <div className="career-tile w-12 h-12 rounded-2xl text-white flex items-center justify-center shrink-0" style={{ ["--c" as string]: color }}>
         {icon}
       </div>
-      <div>
-        <p className="text-2xl font-extrabold">{value}</p>
+      <div className="min-w-0">
+        <p className="text-2xl sm:text-3xl font-black leading-tight">{value}</p>
         <p className="text-xs text-[var(--text-secondary)]">{label}</p>
       </div>
     </Card>
@@ -53,6 +57,7 @@ type OpenModal =
 export default function AdminDashboard() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { adminName } = useOutletContext<{ adminName: string }>();
   const pickName = (item: { nameUz: string; nameRu: string }) => (i18n.language === "ru" ? item.nameRu : item.nameUz);
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: adminApi.getStats });
   const [openModal, setOpenModal] = useState<OpenModal>(null);
@@ -102,29 +107,40 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">{t("admin.dashboardTitle")}</h1>
+      <div className="cc-hero relative overflow-hidden rounded-[1.75rem] text-white p-5 sm:p-8 grid sm:grid-cols-[1fr_auto] items-center gap-4">
+        <div className="relative z-10 min-w-0 pr-24 sm:pr-0">
+          <p className="section-badge mb-3 !inline-flex items-center gap-1.5"><ShieldCheck size={14} /> {t("admin.headerTitle").split("—").pop()?.trim()}</p>
+          <h1 className="text-3xl sm:text-4xl font-black leading-tight">{t("admin.dashboardTitle")}</h1>
+          <p className="text-white/75 mt-1">{t("admin.welcome")}, {adminName}</p>
+          <div className="hidden sm:flex flex-wrap gap-2 mt-5">
+            <span className="chip-stat bg-white/10 text-white"><Users size={16} className="text-violet-300" /> {users.total} {t("admin.totalUsers").toLowerCase()}</span>
+            <span className="chip-stat bg-white/10 text-white"><Activity size={16} className="text-emerald-300" /> {engagement.activeStudentsToday} {t("admin.activeStudentsToday").toLowerCase()}</span>
+          </div>
+        </div>
+        <RobotMascot className="absolute right-0 bottom-0 w-28 h-32 sm:relative sm:w-44 sm:h-48 -mb-4 sm:-my-6" />
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatCard icon={<Users size={18} />} label={t("admin.totalUsers")} value={users.total} onClick={() => navigate("/admin/users")} />
+        <StatCard icon={<Users size={22} />} label={t("admin.totalUsers")} color="#7c4dff" value={users.total} onClick={() => navigate("/admin/users")} />
         <StatCard
-          icon={<GraduationCap size={18} />}
-          label={t("admin.students")}
+          icon={<GraduationCap size={22} />}
+          label={t("admin.students")} color="#0ea5e9"
           value={users.students}
           onClick={() => navigate("/admin/users?role=STUDENT")}
         />
         <StatCard
-          icon={<Heart size={18} />}
-          label={t("admin.parents")}
+          icon={<Heart size={22} />}
+          label={t("admin.parents")} color="#ec4899"
           value={users.parents}
           onClick={() => navigate("/admin/users?role=PARENT")}
         />
         <StatCard
-          icon={<Activity size={18} />}
-          label={t("admin.activeStudentsToday")}
+          icon={<Activity size={22} />}
+          label={t("admin.activeStudentsToday")} color="#10b981"
           value={engagement.activeStudentsToday}
           onClick={() => setOpenModal("activeToday")}
         />
-        <StatCard icon={<Trophy size={18} />} label={t("admin.averageQuizScore")} value={`${quizzes.averageScore}%`} />
+        <StatCard icon={<Trophy size={22} />} label={t("admin.averageQuizScore")} color="#f59e0b" value={`${quizzes.averageScore}%`} />
       </div>
 
       <Modal open={openModal === "activeToday"} onClose={() => setOpenModal(null)} title={t("admin.activeStudentsToday")}>
@@ -161,30 +177,42 @@ export default function AdminDashboard() {
       </Modal>
 
       <Card>
-        <p className="font-semibold mb-4">{t("admin.newUsersTrend")}</p>
+        <p className="font-bold text-lg mb-4">{t("admin.newUsersTrend")}</p>
         <div style={{ width: "100%", height: 220 }}>
           <ResponsiveContainer>
             <LineChart data={newUsersChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-              <XAxis dataKey="date" fontSize={12} />
-              <YAxis fontSize={12} allowDecimals={false} />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#6c3ffb" strokeWidth={2.5} dot={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+              <XAxis dataKey="date" fontSize={12} stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+              <YAxis fontSize={12} allowDecimals={false} stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={32} />
+              <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12 }} />
+              <defs>
+                <linearGradient id="g-users" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#a78bfa" />
+                  <stop offset="100%" stopColor="#22d3ee" />
+                </linearGradient>
+              </defs>
+              <Line type="monotone" dataKey="count" stroke="url(#g-users)" strokeWidth={3.5} dot={false} style={{ filter: "drop-shadow(0 6px 10px #a78bfa88)" }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </Card>
 
       <Card>
-        <p className="font-semibold mb-4">{t("admin.quizAttemptsTrend")}</p>
+        <p className="font-bold text-lg mb-4">{t("admin.quizAttemptsTrend")}</p>
         <div style={{ width: "100%", height: 220 }}>
           <ResponsiveContainer>
             <LineChart data={quizAttemptsChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-              <XAxis dataKey="date" fontSize={12} />
-              <YAxis fontSize={12} allowDecimals={false} />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#16a34a" strokeWidth={2.5} dot={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+              <XAxis dataKey="date" fontSize={12} stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+              <YAxis fontSize={12} allowDecimals={false} stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={32} />
+              <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12 }} />
+              <defs>
+                <linearGradient id="g-quiz" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#34d399" />
+                  <stop offset="100%" stopColor="#22d3ee" />
+                </linearGradient>
+              </defs>
+              <Line type="monotone" dataKey="count" stroke="url(#g-quiz)" strokeWidth={3.5} dot={false} style={{ filter: "drop-shadow(0 6px 10px #34d39988)" }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -194,7 +222,7 @@ export default function AdminDashboard() {
       </Card>
 
       <Card>
-        <p className="font-semibold mb-4">{t("admin.studentsByGrade")}</p>
+        <p className="font-bold text-lg mb-4">{t("admin.studentsByGrade")}</p>
         {studentsByGrade.length === 0 ? (
           <EmptyState title={t("admin.noDataTitle")} />
         ) : (
@@ -204,8 +232,8 @@ export default function AdminDashboard() {
                 <span className="text-sm w-16 shrink-0">
                   {g.grade} {t("profile.grade")}
                 </span>
-                <div className="flex-1 h-2 bg-brand-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-brand-gradient" style={{ width: `${(g.count / maxGradeCount) * 100}%` }} />
+                <div className="flex-1 h-2.5 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${(g.count / maxGradeCount) * 100}%`, background: "linear-gradient(90deg, #7c4dff, #22d3ee)", boxShadow: "0 0 12px rgba(34, 211, 238, 0.6)" }} />
                 </div>
                 <span className="text-xs text-[var(--text-secondary)] w-8 text-right">{g.count}</span>
               </div>
@@ -215,12 +243,12 @@ export default function AdminDashboard() {
       </Card>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon={<BookOpen size={18} />} label={t("admin.subjects")} value={catalog.subjects} onClick={() => setOpenModal("subjects")} />
-        <StatCard icon={<HelpCircle size={18} />} label={t("admin.questions")} value={catalog.questions} onClick={() => setOpenModal("questions")} />
-        <StatCard icon={<Briefcase size={18} />} label={t("admin.careers")} value={catalog.careers} onClick={() => setOpenModal("careers")} />
+        <StatCard icon={<BookOpen size={22} />} label={t("admin.subjects")} color="#6366f1" value={catalog.subjects} onClick={() => setOpenModal("subjects")} />
+        <StatCard icon={<HelpCircle size={22} />} label={t("admin.questions")} color="#06b6d4" value={catalog.questions} onClick={() => setOpenModal("questions")} />
+        <StatCard icon={<Briefcase size={22} />} label={t("admin.careers")} color="#f97316" value={catalog.careers} onClick={() => setOpenModal("careers")} />
         <StatCard
-          icon={<Building2 size={18} />}
-          label={t("admin.universities")}
+          icon={<Building2 size={22} />}
+          label={t("admin.universities")} color="#8b5cf6"
           value={catalog.universities}
           onClick={() => setOpenModal("universities")}
         />
@@ -351,22 +379,22 @@ export default function AdminDashboard() {
       </Modal>
 
       <Card>
-        <p className="font-semibold mb-4">{t("admin.engagement")}</p>
+        <p className="font-bold text-lg mb-4">{t("admin.engagement")}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
-            <p className="text-xl font-extrabold text-brand-600">{engagement.aiConversations}</p>
+            <p className="text-3xl font-black text-gradient-brand">{engagement.aiConversations}</p>
             <p className="text-xs text-[var(--text-secondary)]">{t("admin.aiConversations")}</p>
           </div>
           <div>
-            <p className="text-xl font-extrabold text-brand-600">{engagement.aiMessages}</p>
+            <p className="text-3xl font-black text-gradient-brand">{engagement.aiMessages}</p>
             <p className="text-xs text-[var(--text-secondary)]">{t("admin.aiMessages")}</p>
           </div>
           <div>
-            <p className="text-xl font-extrabold text-brand-600">{engagement.totalAchievements}</p>
+            <p className="text-3xl font-black text-gradient-brand">{engagement.totalAchievements}</p>
             <p className="text-xs text-[var(--text-secondary)]">{t("admin.totalAchievements")}</p>
           </div>
           <div>
-            <p className="text-xl font-extrabold text-brand-600">{engagement.unreadNotifications}</p>
+            <p className="text-3xl font-black text-gradient-brand">{engagement.unreadNotifications}</p>
             <p className="text-xs text-[var(--text-secondary)]">{t("admin.unreadNotifications")}</p>
           </div>
         </div>

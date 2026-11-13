@@ -8,6 +8,7 @@ import { LanguageSwitcher } from "../../components/layout/LanguageSwitcher";
 import { ThemeToggle } from "../../components/layout/ThemeToggle";
 import { NotificationPanel } from "../../components/layout/NotificationPanel";
 import { LogoIcon } from "../../components/icons/LogoIcon";
+import { AppBackground } from "../../components/three/AppBackground";
 
 export default function ParentLayout() {
   const { t } = useTranslation();
@@ -29,7 +30,8 @@ export default function ParentLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-page)]">
+    <div className="relative isolate min-h-screen bg-[var(--bg-page)]">
+      <AppBackground />
       <header className="border-b border-[var(--border-subtle)] bg-white dark:bg-[var(--bg-card)]">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2 font-bold">

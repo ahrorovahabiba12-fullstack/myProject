@@ -2,29 +2,14 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen, BookOpenText, Calculator, Globe, Languages, Atom, FlaskConical, Sprout, Laptop, Landmark, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen } from "lucide-react";
 import clsx from "clsx";
-import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
-import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { RobotMascot } from "../../components/three/RobotMascot";
 import { Button } from "../../components/ui/Button";
 
-// Subject tiles: white card, a gradient circle with a white line icon (variant A
-// Habiba picked), name and an arrow chip below.
-type SubjectLook = { Icon: LucideIcon; from: string; to: string };
-const SUBJECT_STYLE: Record<string, SubjectLook> = {
-  MATH: { Icon: Calculator, from: "#5b8cff", to: "#7c5cff" },
-  MOTHER_LANG: { Icon: BookOpenText, from: "#8bc34a", to: "#3fae5a" },
-  ENGLISH: { Icon: Globe, from: "#36c2e0", to: "#2f8ee8" },
-  RUSSIAN: { Icon: Languages, from: "#f59e6b", to: "#ef6c5a" },
-  PHYSICS: { Icon: Atom, from: "#4cc9a6", to: "#14a394" },
-  CHEMISTRY: { Icon: FlaskConical, from: "#f7c948", to: "#f0a020" },
-  BIOLOGY: { Icon: Sprout, from: "#9ccc65", to: "#43a047" },
-  INFORMATICS: { Icon: Laptop, from: "#7a5cff", to: "#3d6fe0" },
-  HISTORY: { Icon: Landmark, from: "#e0a15f", to: "#c2703d" },
-};
-const styleFor = (code: string): SubjectLook =>
-  SUBJECT_STYLE[code] ?? { Icon: BookOpen, from: "#8b6cff", to: "#6c3ffb" };
+import { QuizSubjectsCards } from "./variants/QuizSubjects";
 
 function StepHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
   const { t } = useTranslation();
@@ -39,77 +24,11 @@ function StepHeader({ title, subtitle, back }: { title: string; subtitle?: strin
           <ChevronLeft size={20} />
         </button>
       )}
-      <div>
+      <div className="flex-1">
         <h1 className="text-2xl font-extrabold">{title}</h1>
         {subtitle && <p className="text-[var(--text-secondary)] mt-1">{subtitle}</p>}
       </div>
-    </div>
-  );
-}
-
-/** Screen 1 — the subjects taught in the student's own grade. */
-function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
-  const { t } = useTranslation();
-  const subjects = useQuery({ queryKey: ["quiz-subjects"], queryFn: quizApi.subjects });
-
-  return (
-    <div>
-      <StepHeader title={t("quiz.pickSubjectTitle")} subtitle={subjects.data ? t("quiz.pickSubjectSubtitle", { grade: subjects.data.grade }) : undefined} />
-      {subjects.isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
-        </div>
-      ) : subjects.isError ? (
-        <ErrorState message={t("quiz.loadError")} onRetry={() => subjects.refetch()} />
-      ) : !subjects.data?.subjects.length ? (
-        <EmptyState icon="📚" title={t("quiz.noSubjects")} />
-      ) : (
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-          {subjects.data.subjects.map((s) => (
-            <button
-              key={s.code}
-              onClick={() => onPick(s)}
-              className="group text-left rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm transition hover:shadow-card hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
-            >
-              <div className="relative h-20 sm:h-32 flex items-center justify-center mb-2 sm:mb-3">
-                {(() => {
-                  const look = styleFor(s.code);
-                  return (
-                    <span
-                      className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white transition-transform group-hover:scale-105"
-                      style={{ background: `linear-gradient(140deg, ${look.from}, ${look.to})`, boxShadow: `0 10px 18px -8px ${look.to}` }}
-                      aria-hidden="true"
-                    >
-                      <look.Icon className="w-8 h-8 sm:w-11 sm:h-11" strokeWidth={2} />
-                    </span>
-                  );
-                })()}
-              </div>
-              <div className="flex items-center justify-between gap-1">
-                <p className="font-extrabold text-[13px] leading-tight sm:text-lg">{s.name}</p>
-                <span className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 flex items-center justify-center" aria-hidden="true">
-                  <ChevronRight size={16} />
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-      {subjects.data && subjects.data.grade >= MIN_CAREER_GRADE && (
-        <Link
-          to="/dtm"
-          className="mt-5 flex items-center gap-4 rounded-card p-4 sm:p-5 text-white bg-gradient-to-br from-rose-400 to-pink-500 shadow-card hover:-translate-y-0.5 transition-transform"
-        >
-          <span className="text-3xl" aria-hidden="true">📝</span>
-          <div className="flex-1">
-            <p className="font-extrabold text-lg">{t("quiz.dtmBannerTitle")}</p>
-            <p className="text-sm text-white/90">{t("quiz.dtmBannerDesc")}</p>
-          </div>
-          <ChevronRight size={22} aria-hidden="true" />
-        </Link>
-      )}
+      <RobotMascot className="shrink-0 w-16 h-20 sm:w-24 sm:h-28 -my-3" />
     </div>
   );
 }
@@ -129,6 +48,7 @@ function GradePicker({ subject, ownGrade, onPick, onBack }: { subject: QuizSubje
               key={g}
               disabled={!available}
               onClick={() => onPick(g)}
+              data-tilt
               className={clsx(
                 "relative h-20 rounded-2xl border-2 font-extrabold text-2xl transition-colors flex flex-col items-center justify-center",
                 g === ownGrade
@@ -174,6 +94,7 @@ function TopicPicker({ subject, grade, onPick, onBack }: { subject: QuizSubject;
                 key={topic.id}
                 disabled={!ready}
                 onClick={() => onPick(topic.id)}
+                data-tilt={ready ? "" : undefined}
                 className={clsx(
                   "flex items-center gap-4 text-left rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3.5 transition-colors",
                   ready ? "hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/20" : "opacity-60 cursor-not-allowed"
@@ -487,7 +408,7 @@ export default function Quiz() {
   }
   return (
     <>
-      <SubjectPicker onPick={(s) => go({ subject: s.code })} />
+      <QuizSubjectsCards onPick={(s) => go({ subject: s.code })} />
       <p className="mt-6 text-sm text-[var(--text-secondary)] flex items-center gap-2">
         <BookOpen size={16} /> {t("quiz.pickSubjectHint")}
       </p>

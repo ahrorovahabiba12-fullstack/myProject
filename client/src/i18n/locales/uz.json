@@ -23,7 +23,37 @@
     "feature3Title": "Rivojlanish tahlili",
     "feature3Desc": "Progressingizni kuzatib, kuchli tomonlaringizni ochadi.",
     "feature4Title": "Kasb va universitet tavsiyalari",
-    "feature4Desc": "Sizga mos kasblar va universitetlarni topadi."
+    "feature4Desc": "Sizga mos kasblar va universitetlarni topadi.",
+    "stat1Value": "1–11",
+    "stat1Label": "sinflar uchun",
+    "stat2Value": "1 440+",
+    "stat2Label": "tushuntirishli savol",
+    "stat3Value": "189",
+    "stat3Label": "ballik DTM mashqi",
+    "scrollHint": "Pastga suring",
+    "howBadge": "Qanday ishlaydi",
+    "howTitle": "Kelajagingizga 3 qadam",
+    "step1Title": "Bilimingizni sinang",
+    "step1Desc": "Fan, sinf va mavzuni tanlang. Har bir xato javobga tushuntirish beriladi.",
+    "step2Title": "Qiziqishingizni toping",
+    "step2Desc": "36 savollik qiziqishlar testi sizga mos kasblarni ko'rsatadi.",
+    "step3Title": "Yo'lingizni tanlang",
+    "step3Desc": "Kasb uchun DTM fanlari, universitetlar va tayyorlanish rejasini oling.",
+    "featuresBadge": "Imkoniyatlar",
+    "featuresTitle": "Hammasi bitta joyda",
+    "ctaTitle": "Kelajagingizni bugun boshlang",
+    "ctaSub": "Ro'yxatdan o'tish bepul va bir daqiqa vaqt oladi.",
+    "kineticQuestion": "Kelajakda kim bo'lasiz?",
+    "kineticCareers": [
+      "Dasturchi",
+      "Shifokor",
+      "Dizayner",
+      "Muhandis",
+      "Huquqshunos",
+      "Olim",
+      "Arxitektor",
+      "O'qituvchi"
+    ]
   },
   "auth": {
     "loginTitle": "Xush kelibsiz!",
@@ -480,5 +510,69 @@
     "auto3": "Test yoki DTM mashqi topshirilganda: ota-onaga natija",
     "auto4": "Kasb tanlash testi topshirilganda: mos kasblar (o'quvchi va ota-onaga)",
     "auto5": "Ketma-ket kunlar seriyasi uzilay deganda: o'quvchiga eslatma"
+  },
+  "dash": {
+    "level": "Daraja",
+    "toNext": "Keyingi darajagacha {{n}} ball",
+    "skills": "Fanlar bo'yicha bilim",
+    "mapTitle": "Sizning yo'lingiz",
+    "questsTitle": "Bugungi vazifalar",
+    "quest1": "Bugun 1 ta fandan test yeching",
+    "quest2": "Bugun 3 ta fandan mashq qiling",
+    "quest3": "7 kunlik seriyaga yeting"
+  },
+  "variants": {
+    "careerHeadline": "Qaysi kasb aynan sizga mos?",
+    "chipQuestions": "36 savol",
+    "chipTime": "~5 daqiqa",
+    "chipResult": "Mos kasblar ro'yxati",
+    "online": "onlayn",
+    "chatHello": "Salom! Men sizning AI maslahatchingizman. Fanlar, kasb yoki universitet haqida so'rang.",
+    "chatHeadline": "Robotdan istagan narsani so'rang",
+    "chatSub": "Kasb, DTM, universitet va fanlar bo'yicha shaxsiy maslahat",
+    "topicCareer": "Kasb",
+    "topicCareerQ": "Menga qaysi kasb mos keladi?",
+    "topicDtm": "DTM",
+    "topicDtmQ": "DTMga qanday tayyorlanay?",
+    "topicUni": "Universitet",
+    "topicUniQ": "Qaysi universitetga kirsam bo'ladi?",
+    "topicStudy": "Fanlar",
+    "topicStudyQ": "Matematikani qanday yaxshilasam bo'ladi?",
+    "askAbout": "Mavzu tanlang",
+    "deckCareers": [
+      {
+        "code": "SOFTWARE_ENGINEER",
+        "name": "Dasturchi",
+        "exam": "Matematika, Fizika"
+      },
+      {
+        "code": "MEDICINE",
+        "name": "Shifokor",
+        "exam": "Biologiya, Kimyo"
+      },
+      {
+        "code": "DESIGNER",
+        "name": "Dizayner",
+        "exam": "Matematika, Ona tili + ijodiy imtihon"
+      },
+      {
+        "code": "CIVIL_ENGINEER",
+        "name": "Muhandis",
+        "exam": "Matematika, Fizika"
+      },
+      {
+        "code": "LAWYER",
+        "name": "Huquqshunos",
+        "exam": "Tarix, Ingliz tili"
+      },
+      {
+        "code": "ARCHITECT",
+        "name": "Arxitektor",
+        "exam": "Matematika, Fizika + ijodiy imtihon"
+      }
+    ],
+    "examLabel": "DTM fanlari",
+    "more": "Batafsil",
+    "flipHint": "Kartani bosing: qaysi fanlar kerakligini ko'rasiz"
   }
 }

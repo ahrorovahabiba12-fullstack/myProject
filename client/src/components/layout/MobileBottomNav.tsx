@@ -17,7 +17,7 @@ export function MobileBottomNav({ careerVisible }: { careerVisible: boolean }) {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-subtle)] flex items-center justify-around py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-40">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 glass-nav border-t border-[var(--border-subtle)] flex items-center justify-around py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-40">
       {items.map((item) => (
         <NavLink
           key={item.to}

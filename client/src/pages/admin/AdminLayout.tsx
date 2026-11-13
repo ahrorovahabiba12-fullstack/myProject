@@ -8,6 +8,7 @@ import { useAuthStore } from "../../store/authStore";
 import { LanguageSwitcher } from "../../components/layout/LanguageSwitcher";
 import { ThemeToggle } from "../../components/layout/ThemeToggle";
 import { AdminSidebar, useAdminNavItems } from "../../components/layout/AdminSidebar";
+import { AppBackground } from "../../components/three/AppBackground";
 
 export default function AdminLayout() {
   const { t } = useTranslation();
@@ -30,16 +31,17 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-page)]">
+    <div className="relative isolate flex min-h-screen bg-[var(--bg-page)]">
+      <AppBackground />
       <AdminSidebar />
-      <div className="flex-1 min-w-0">
-        <header className="border-b border-[var(--border-subtle)] bg-white dark:bg-[var(--bg-card)]">
+      <div className="relative z-10 flex-1 min-w-0">
+        <header className="sticky top-0 z-20 glass-nav border-b border-[var(--border-subtle)]">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2 font-bold lg:hidden">
-              <div className="w-8 h-8 rounded-lg bg-brand-gradient flex items-center justify-center text-white">
+              <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center text-white icon-3d glow-violet">
                 <ShieldCheck size={16} />
               </div>
-              {t("admin.headerTitle")}
+              {t("admin.headerTitle").split("—").pop()?.trim()}
             </div>
             <div className="hidden lg:block" />
             <nav className="flex items-center gap-4 text-sm font-medium">
@@ -64,7 +66,7 @@ export default function AdminLayout() {
                 className={({ isActive }) =>
                   clsx(
                     "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium",
-                    isActive ? "bg-brand-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-[var(--text-secondary)]"
+                    isActive ? "bg-brand-gradient text-white shadow-md shadow-brand-900/30" : "bg-white/60 dark:bg-white/5 border border-[var(--border-subtle)] text-[var(--text-secondary)]"
                   )
                 }
               >
@@ -74,10 +76,7 @@ export default function AdminLayout() {
           </nav>
         </header>
         <main className="max-w-6xl mx-auto px-6 py-8">
-          <p className="text-sm text-[var(--text-secondary)] mb-1">
-            {t("admin.welcome")}, {user?.fullName}
-          </p>
-          <Outlet />
+          <Outlet context={{ adminName: user?.fullName ?? "" }} />
         </main>
       </div>
     </div>

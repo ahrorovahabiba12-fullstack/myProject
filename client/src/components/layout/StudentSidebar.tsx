@@ -9,7 +9,7 @@ type Props = { careerVisible: boolean; grade?: number };
 
 export function StudentSidebar(props: Props) {
   return (
-    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-0 h-screen overflow-y-auto bg-[#1a1533] text-white px-4 py-6 gap-1">
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-0 z-20 h-screen overflow-y-auto sidebar-3d text-white px-4 py-6 gap-1">
       <SidebarContent {...props} />
     </aside>
   );
@@ -40,7 +40,7 @@ export function MobileMenu(props: Props) {
       {open && (
         <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] flex flex-col overflow-y-auto bg-[#1a1533] text-white px-4 py-6 gap-1 shadow-2xl animate-slide-in">
+          <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] flex flex-col overflow-y-auto sidebar-3d text-white px-4 py-6 gap-1 shadow-2xl animate-slide-in">
             <button
               onClick={() => setOpen(false)}
               aria-label={t("nav_sidebar.closeMenu")}
@@ -78,7 +78,7 @@ function SidebarContent({ careerVisible, grade }: Props) {
   return (
     <>
       <div className="flex items-center gap-2.5 font-bold text-lg px-2 mb-6">
-        <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-lg shadow-brand-900/40">
+        <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center icon-3d glow-violet logo-3d">
           <LogoIcon size={20} />
         </div>
         AI Advisor
