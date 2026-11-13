@@ -6,6 +6,7 @@ import { LanguageSwitcher } from "../../components/layout/LanguageSwitcher";
 import { LogoIcon } from "../../components/icons/LogoIcon";
 import { SpaceBackground } from "../../components/three/SpaceBackground";
 import { useReveal } from "../../lib/useReveal";
+import type { SceneVariant } from "../../components/three/HeroScene3D";
 
 // three.js is heavy, so the 3D scene is downloaded separately, only here.
 const HeroScene3D = lazy(() => import("../../components/three/HeroScene3D"));
@@ -26,6 +27,9 @@ const STEPS = [
 export default function Landing() {
   const { t } = useTranslation();
   const revealRef = useReveal<HTMLDivElement>();
+  // ?scene=planet|ai|path lets us preview the other 3D looks.
+  const sceneParam = new URLSearchParams(window.location.search).get("scene");
+  const variant: SceneVariant = sceneParam === "ai" || sceneParam === "path" ? sceneParam : "planet";
 
   return (
     // The landing always uses the dark "space" look, whatever the app theme.
@@ -54,7 +58,7 @@ export default function Landing() {
         {/* 3D scene: behind the text on phones, on the right on desktop */}
         <div className="absolute inset-x-0 top-0 h-[52svh] lg:static lg:h-[620px] lg:order-2 -z-10 lg:z-0 opacity-90 lg:opacity-100">
           <Suspense fallback={null}>
-            <HeroScene3D className="w-full h-full" />
+            <HeroScene3D className="w-full h-full" variant={variant} />
           </Suspense>
         </div>
 

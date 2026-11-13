@@ -3,16 +3,20 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 /**
- * The landing page's 3D centrepiece: a glossy graduation cap on a stack of
- * books, two glowing orbit rings with little "planets" (one per school
- * subject colour), a compass, a growth arrow, glassy floating crystals and a
- * field of glowing particles. The scene follows the pointer / finger and
- * also tilts slightly as the page scrolls.
+ * The landing page's 3D centrepiece. Three looks are available:
+ *  - "planet": a glowing "planet of the future" with a Saturn-like ring of
+ *    light, a rocket circling it and career badges orbiting around;
+ *  - "ai": a glass crystal "AI brain" with a pulsing core inside a neural
+ *    network of glowing nodes;
+ *  - "path": floating islands spiralling upwards like a staircase from
+ *    school to career, with a glowing orb hopping along the path.
  *
- * Plain three.js, lazy-loaded only on the landing and auth pages. It stops
- * rendering when off-screen or when the tab is hidden, uses lower quality on
- * phones, and draws a single still frame for "reduce motion" users.
+ * Plain three.js, lazy-loaded. Rendering pauses when off-screen or when the
+ * tab is hidden, quality is lowered on phones, and "reduce motion" users
+ * get a single still frame.
  */
+
+export type SceneVariant = "planet" | "ai" | "path";
 
 const VIOLET = 0x7c4dff;
 const VIOLET_LIGHT = 0xa78bfa;
@@ -20,20 +24,13 @@ const BLUE = 0x4f6df5;
 const CYAN = 0x22d3ee;
 const PINK = 0xf472b6;
 const AMBER = 0xfbbf24;
-const INK = 0x14102a;
+
+type Updater = (t: number) => void;
 
 function phys(color: number, opts: Partial<THREE.MeshPhysicalMaterialParameters> = {}) {
-  return new THREE.MeshPhysicalMaterial({
-    color,
-    roughness: 0.25,
-    metalness: 0.15,
-    clearcoat: 1,
-    clearcoatRoughness: 0.15,
-    ...opts,
-  });
+  return new THREE.MeshPhysicalMaterial({ color, roughness: 0.25, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.15, ...opts });
 }
 
-/** Radial-gradient sprite texture used for glows and particles. */
 function glowTexture() {
   const c = document.createElement("canvas");
   c.width = c.height = 128;
@@ -51,132 +48,397 @@ function glowTexture() {
 
 function glow(tex: THREE.Texture, color: number, size: number, opacity = 0.8) {
   const s = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: tex,
-      color,
-      transparent: true,
-      opacity,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
+    new THREE.SpriteMaterial({ map: tex, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false })
   );
   s.scale.setScalar(size);
   return s;
 }
 
-function roundedSlab(w: number, h: number, d: number, r: number) {
-  const shape = new THREE.Shape();
-  const x = -w / 2;
-  const y = -d / 2;
-  shape.moveTo(x + r, y);
-  shape.lineTo(x + w - r, y);
-  shape.quadraticCurveTo(x + w, y, x + w, y + r);
-  shape.lineTo(x + w, y + d - r);
-  shape.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
-  shape.lineTo(x + r, y + d);
-  shape.quadraticCurveTo(x, y + d, x, y + d - r);
-  shape.lineTo(x, y + r);
-  shape.quadraticCurveTo(x, y, x + r, y);
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: h,
-    bevelEnabled: true,
-    bevelThickness: 0.04,
-    bevelSize: 0.04,
-    bevelSegments: 3,
-    curveSegments: 8,
-  });
-  geo.rotateX(Math.PI / 2);
-  geo.translate(0, h / 2, 0);
-  return geo;
+/** A round glassy badge with an emoji on it, drawn into a canvas texture. */
+function badge(emoji: string, ring: string, size = 0.9) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d")!;
+  const grd = g.createLinearGradient(0, 0, 256, 256);
+  grd.addColorStop(0, "rgba(255,255,255,0.95)");
+  grd.addColorStop(1, "rgba(230,224,255,0.9)");
+  g.beginPath();
+  g.arc(128, 128, 112, 0, Math.PI * 2);
+  g.fillStyle = grd;
+  g.fill();
+  g.lineWidth = 12;
+  g.strokeStyle = ring;
+  g.stroke();
+  g.font = "120px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText(emoji, 128, 138);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  s.scale.setScalar(size);
+  return s;
 }
 
-function buildBook(w: number, h: number, d: number, cover: number) {
-  const g = new THREE.Group();
-  g.add(new THREE.Mesh(roundedSlab(w, h, d, 0.1), phys(cover, { metalness: 0.3 })));
-  const pages = new THREE.Mesh(
-    new THREE.BoxGeometry(w * 0.93, h * 0.68, d * 0.9),
-    new THREE.MeshStandardMaterial({ color: 0xfaf7ff, roughness: 0.85 })
+/** Soft fresnel "atmosphere" shell around a sphere. */
+function atmosphere(radius: number, color: number, power = 2.5, strength = 1.2) {
+  return new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 64, 64),
+    new THREE.ShaderMaterial({
+      uniforms: { uColor: { value: new THREE.Color(color) }, uPow: { value: power }, uStr: { value: strength } },
+      vertexShader: `varying vec3 vN; varying vec3 vV;
+        void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+      fragmentShader: `uniform vec3 uColor; uniform float uPow; uniform float uStr; varying vec3 vN; varying vec3 vV;
+        void main(){ float f = pow(1.0 - abs(dot(vN, vV)), uPow) * uStr; gl_FragColor = vec4(uColor * f, f); }`,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
   );
-  pages.position.x = 0.07;
-  g.add(pages);
-  // Gold stripe on the spine.
-  const stripe = new THREE.Mesh(
-    new THREE.BoxGeometry(0.06, h * 0.9, d * 0.92),
-    phys(AMBER, { metalness: 0.9, roughness: 0.2 })
+}
+
+/** Procedural banded "gas giant" texture in the brand colours. */
+function planetTexture() {
+  const c = document.createElement("canvas");
+  c.width = 512;
+  c.height = 256;
+  const g = c.getContext("2d")!;
+  const grd = g.createLinearGradient(0, 0, 0, 256);
+  const stops = ["#2a1a7a", "#5b3df5", "#7c4dff", "#4f6df5", "#22d3ee", "#6d5dfc", "#a78bfa", "#3b2bb8", "#f472b6", "#5b3df5", "#2a1a7a"];
+  stops.forEach((s, i) => grd.addColorStop(i / (stops.length - 1), s));
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 512, 256);
+  // Wavy bands for a "living" surface.
+  for (let i = 0; i < 70; i++) {
+    const y = Math.random() * 256;
+    g.strokeStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.08})`;
+    g.lineWidth = 1 + Math.random() * 5;
+    g.beginPath();
+    for (let x = 0; x <= 512; x += 16) g.lineTo(x, y + Math.sin(x / 40 + i) * 4);
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+/* ------------------------------------------------------------------ */
+/* Variant A: planet of the future                                    */
+/* ------------------------------------------------------------------ */
+function buildPlanet(world: THREE.Group, tex: THREE.Texture, small: boolean): Updater {
+  const R = 1.55;
+  const surface = planetTexture();
+  const planet = new THREE.Mesh(
+    new THREE.SphereGeometry(R, 96, 96),
+    phys(0xffffff, { map: surface, roughness: 0.45, metalness: 0.1, clearcoat: 0.6, emissive: VIOLET, emissiveIntensity: 0.12 })
   );
-  stripe.position.x = -w / 2 + 0.25;
-  g.add(stripe);
-  return g;
-}
+  planet.rotation.z = 0.35;
+  world.add(planet);
+  world.add(atmosphere(R * 1.08, CYAN, 3, 1.4));
+  const halo = glow(tex, VIOLET, R * 5.2, 0.55);
+  halo.position.z = -1;
+  world.add(halo);
 
-function buildCap() {
-  const g = new THREE.Group();
-  const capMat = phys(INK, { roughness: 0.35, metalness: 0.4, sheen: 1, sheenColor: new THREE.Color(VIOLET) });
-  const board = new THREE.Mesh(roundedSlab(2.1, 0.09, 2.1, 0.06), capMat);
-  board.rotation.y = Math.PI / 4;
-  board.position.y = 0.46;
-  g.add(board);
-  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.76, 0.5, 48), capMat);
-  crown.position.y = 0.2;
-  g.add(crown);
-  const band = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.035, 12, 64), phys(VIOLET, { emissive: VIOLET, emissiveIntensity: 1.2 }));
-  band.rotation.x = Math.PI / 2;
-  band.position.y = 0.0;
-  g.add(band);
-  const gold = phys(AMBER, { metalness: 0.95, roughness: 0.18 });
-  const button = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 20), gold);
-  button.position.y = 0.56;
-  g.add(button);
-  const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 8), gold);
-  cord.rotation.z = Math.PI / 2;
-  cord.position.set(0.5, 0.55, 0);
-  g.add(cord);
-  const hang = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 8), gold);
-  hang.position.set(1.0, 0.25, 0);
-  g.add(hang);
-  const tassel = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.32, 16), gold);
-  tassel.position.set(1.0, -0.08, 0);
-  g.add(tassel);
-  return g;
-}
-
-function buildCompass() {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5, 0.5, 0.12, 48),
-    phys(0xffffff, { roughness: 0.1, transmission: 0, metalness: 0.1 })
+  // Saturn-like ring made of glowing dust.
+  const ringGroup = new THREE.Group();
+  ringGroup.rotation.set(Math.PI / 2 - 0.42, 0, 0.25);
+  const n = small ? 1400 : 3000;
+  const pos = new Float32Array(n * 3);
+  const col = new Float32Array(n * 3);
+  const cA = new THREE.Color(VIOLET_LIGHT);
+  const cB = new THREE.Color(CYAN);
+  const cC = new THREE.Color(PINK);
+  for (let i = 0; i < n; i++) {
+    const r = R * (1.45 + Math.pow(Math.random(), 0.7) * 0.95);
+    const a = Math.random() * Math.PI * 2;
+    pos.set([Math.cos(a) * r, Math.sin(a) * r, (Math.random() - 0.5) * 0.06], i * 3);
+    const c = i % 7 === 0 ? cC : cA.clone().lerp(cB, (r / R - 1.45) / 0.95);
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  const ringGeo = new THREE.BufferGeometry();
+  ringGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  ringGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const ringDust = new THREE.Points(
+    ringGeo,
+    new THREE.PointsMaterial({ size: 0.055, map: tex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
   );
-  body.rotation.x = Math.PI / 2;
-  g.add(body);
-  g.add(new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.06, 16, 64), phys(AMBER, { metalness: 0.95, roughness: 0.2 })));
-  const n = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 4), phys(PINK, { emissive: PINK, emissiveIntensity: 0.4 }));
-  n.position.set(0, 0.2, 0.09);
-  g.add(n);
-  const s = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 4), phys(BLUE));
-  s.rotation.z = Math.PI;
-  s.position.set(0, -0.2, 0.09);
-  g.add(s);
-  return g;
-}
+  ringGroup.add(ringDust);
+  const ringLine = new THREE.Mesh(new THREE.TorusGeometry(R * 1.42, 0.012, 8, 200), new THREE.MeshBasicMaterial({ color: CYAN }));
+  ringGroup.add(ringLine);
+  world.add(ringGroup);
 
-function buildArrow() {
-  const pts = [
-    new THREE.Vector3(-0.75, -0.5, 0),
-    new THREE.Vector3(-0.28, -0.05, 0),
-    new THREE.Vector3(0.08, -0.22, 0),
-    new THREE.Vector3(0.62, 0.42, 0),
+  // Rocket circling the planet.
+  const rocketOrbit = new THREE.Group();
+  rocketOrbit.rotation.set(0.5, 0, -0.35);
+  const rocket = new THREE.Group();
+  const white = phys(0xffffff, { metalness: 0.3, roughness: 0.2 });
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.36, 8, 24), white);
+  rocket.add(body);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.22, 24), phys(PINK, { emissive: PINK, emissiveIntensity: 0.3 }));
+  nose.position.y = 0.36;
+  rocket.add(nose);
+  const window_ = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), phys(CYAN, { emissive: CYAN, emissiveIntensity: 0.8 }));
+  window_.position.set(0, 0.08, 0.12);
+  rocket.add(window_);
+  for (let i = 0; i < 3; i++) {
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.14), phys(VIOLET));
+    const a = (i / 3) * Math.PI * 2;
+    fin.position.set(Math.sin(a) * 0.13, -0.22, Math.cos(a) * 0.13);
+    fin.rotation.y = a;
+    rocket.add(fin);
+  }
+  const flame = glow(tex, AMBER, 0.55, 0.95);
+  flame.position.y = -0.38;
+  rocket.add(flame);
+  const flame2 = glow(tex, PINK, 0.35, 0.9);
+  flame2.position.y = -0.5;
+  rocket.add(flame2);
+  rocket.scale.setScalar(1.25);
+  const orbitR = R * 1.95;
+  rocketOrbit.add(rocket);
+  // Faint trail ring for the rocket.
+  rocketOrbit.add(
+    new THREE.Mesh(
+      new THREE.TorusGeometry(orbitR, 0.008, 6, 200),
+      new THREE.MeshBasicMaterial({ color: AMBER, transparent: true, opacity: 0.35 })
+    )
+  );
+  world.add(rocketOrbit);
+
+  // Career badges floating around.
+  const careers: [string, string, [number, number, number]][] = [
+    ["💻", "#7c4dff", [-2.9, 1.3, 0.4]],
+    ["🩺", "#22d3ee", [2.9, 1.5, 0.2]],
+    ["🎨", "#f472b6", [-3.1, -1.1, 0.6]],
+    ["⚖️", "#fbbf24", [3.0, -1.0, 0.8]],
+    ["🔬", "#4f6df5", [-1.2, 2.5, -0.6]],
+    ["🏗️", "#a78bfa", [1.5, -2.3, 1.0]],
   ];
-  const g = new THREE.Group();
-  const m = phys(CYAN, { emissive: CYAN, emissiveIntensity: 0.6, metalness: 0.3 });
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.1), 64, 0.06, 12, false), m));
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 20), m);
-  head.position.copy(pts[3]).add(new THREE.Vector3(0.07, 0.08, 0));
-  head.rotation.z = -0.72;
-  g.add(head);
-  return g;
+  const badges = careers.map(([e, ring, p], i) => {
+    const b = badge(e, ring, 0.85);
+    b.position.set(...p);
+    const bg = glow(tex, new THREE.Color(ring).getHex(), 1.6, 0.4);
+    bg.position.set(p[0], p[1], p[2] - 0.05);
+    world.add(bg, b);
+    return { b, bg, base: p[1], phase: i * 1.1 };
+  });
+
+  return (t) => {
+    planet.rotation.y = t * 0.15;
+    surface.offset.x = t * 0.01;
+    ringDust.rotation.z = t * 0.05;
+    const a = t * 0.6;
+    rocket.position.set(Math.cos(a) * orbitR, Math.sin(a) * orbitR, 0);
+    rocket.rotation.z = a; // nose points along the orbit
+    flame.scale.setScalar(0.5 + Math.sin(t * 20) * 0.08);
+    badges.forEach(({ b, bg, base, phase }) => {
+      const y = base + Math.sin(t * 0.9 + phase) * 0.15;
+      b.position.y = y;
+      bg.position.y = y;
+    });
+  };
 }
 
-export default function HeroScene3D({ className, compact = false }: { className?: string; compact?: boolean }) {
+/* ------------------------------------------------------------------ */
+/* Variant B: AI crystal brain                                        */
+/* ------------------------------------------------------------------ */
+function buildAi(world: THREE.Group, tex: THREE.Texture, small: boolean): Updater {
+  const crystal = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(1.35, 1),
+    phys(VIOLET_LIGHT, {
+      flatShading: true,
+      roughness: 0.05,
+      metalness: 0.2,
+      emissive: VIOLET,
+      emissiveIntensity: 0.25,
+      transmission: 0.3,
+      thickness: 1.2,
+      ior: 1.5,
+      iridescence: 1,
+      iridescenceIOR: 1.8,
+      transparent: true,
+      opacity: 0.85,
+    })
+  );
+  world.add(crystal);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.55, 48, 48), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  world.add(core);
+  const coreGlow = glow(tex, CYAN, 3.2, 0.9);
+  const coreGlow2 = glow(tex, VIOLET, 5.5, 0.7);
+  world.add(coreGlow2, coreGlow);
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.9, 1)),
+    new THREE.LineBasicMaterial({ color: VIOLET_LIGHT, transparent: true, opacity: 0.45 })
+  );
+  world.add(wire);
+
+  // Neural network: nodes on a sphere, linked to nearest neighbours.
+  const nodeCount = small ? 46 : 70;
+  const nodes: THREE.Vector3[] = [];
+  for (let i = 0; i < nodeCount; i++) {
+    const y = 1 - (i / (nodeCount - 1)) * 2;
+    const r = Math.sqrt(1 - y * y);
+    const th = i * 2.399963;
+    nodes.push(new THREE.Vector3(Math.cos(th) * r, y, Math.sin(th) * r).multiplyScalar(2.9 + (i % 3) * 0.25));
+  }
+  const net = new THREE.Group();
+  const linePos: number[] = [];
+  const edges: [THREE.Vector3, THREE.Vector3][] = [];
+  nodes.forEach((a, i) => {
+    nodes
+      .map((b, j) => ({ j, d: a.distanceTo(b) }))
+      .filter((o) => o.j > i)
+      .sort((x, y) => x.d - y.d)
+      .slice(0, 2)
+      .forEach(({ j }) => {
+        linePos.push(a.x, a.y, a.z, nodes[j].x, nodes[j].y, nodes[j].z);
+        edges.push([a, nodes[j]]);
+      });
+  });
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePos, 3));
+  net.add(new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ color: VIOLET_LIGHT, transparent: true, opacity: 0.28 })));
+  const colors = [CYAN, PINK, VIOLET_LIGHT, AMBER];
+  nodes.forEach((p, i) => {
+    const s = glow(tex, colors[i % colors.length], 0.32, 0.95);
+    s.position.copy(p);
+    net.add(s);
+  });
+  // Pulses travelling along links (signals).
+  const pulses = Array.from({ length: small ? 14 : 24 }, (_, i) => {
+    const s = glow(tex, i % 2 ? CYAN : PINK, 0.28, 1);
+    net.add(s);
+    return { s, e: edges[(i * 7) % edges.length], speed: 0.3 + (i % 5) * 0.08, off: i * 0.37 };
+  });
+  // Links from core to a few nodes.
+  const spokes: number[] = [];
+  nodes.forEach((p, i) => i % 6 === 0 && spokes.push(0, 0, 0, p.x, p.y, p.z));
+  const spokeGeo = new THREE.BufferGeometry();
+  spokeGeo.setAttribute("position", new THREE.Float32BufferAttribute(spokes, 3));
+  net.add(new THREE.LineSegments(spokeGeo, new THREE.LineBasicMaterial({ color: CYAN, transparent: true, opacity: 0.18 })));
+  world.add(net);
+
+  // Orbiting rings.
+  const rings = [0.4, -0.6, 1.2].map((tilt, i) => {
+    const m = new THREE.Mesh(
+      new THREE.TorusGeometry(2.25 + i * 0.12, 0.015, 8, 160),
+      new THREE.MeshBasicMaterial({ color: [CYAN, PINK, VIOLET_LIGHT][i], transparent: true, opacity: 0.7 })
+    );
+    m.rotation.set(Math.PI / 2 + tilt, tilt, 0);
+    world.add(m);
+    return m;
+  });
+
+  return (t) => {
+    crystal.rotation.y = t * 0.25;
+    crystal.rotation.x = Math.sin(t * 0.3) * 0.3;
+    wire.rotation.y = -t * 0.12;
+    wire.rotation.z = t * 0.05;
+    const pulse = 1 + Math.sin(t * 2.2) * 0.12;
+    core.scale.setScalar(pulse);
+    coreGlow.scale.setScalar(3.2 * pulse);
+    net.rotation.y = t * 0.06;
+    rings.forEach((r, i) => (r.rotation.z = t * (0.2 + i * 0.1) * (i % 2 ? -1 : 1)));
+    pulses.forEach(({ s, e, speed, off }) => {
+      const k = (t * speed + off) % 1;
+      s.position.lerpVectors(e[0], e[1], k);
+    });
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Variant C: path of floating islands                                */
+/* ------------------------------------------------------------------ */
+function buildPath(world: THREE.Group, tex: THREE.Texture): Updater {
+  const steps: [string, number][] = [
+    ["📚", BLUE],
+    ["🧪", CYAN],
+    ["🎯", PINK],
+    ["🎓", VIOLET],
+    ["🚀", AMBER],
+  ];
+  const points: THREE.Vector3[] = [];
+  const islands = steps.map(([emoji, color], i) => {
+    const a = -2.3 + i * 1.15;
+    const p = new THREE.Vector3(Math.cos(a) * 2.2 - 0.3, -2.3 + i * 0.8, Math.sin(a) * 1.4);
+    points.push(p.clone().add(new THREE.Vector3(0, 0.25, 0)));
+    const g = new THREE.Group();
+    g.position.copy(p);
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.16, 6), phys(0xf5f3ff, { roughness: 0.3 }));
+    g.add(top);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.5, 0.12, 6), phys(color, { emissive: color, emissiveIntensity: 0.6 }));
+    rim.position.y = -0.13;
+    g.add(rim);
+    const rock = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 6), phys(0x2a1f66, { roughness: 0.7, flatShading: true }));
+    rock.rotation.x = Math.PI;
+    rock.position.y = -0.64;
+    g.add(rock);
+    const under = glow(tex, color, 1.8, 0.5);
+    under.position.y = -0.3;
+    g.add(under);
+    const b = badge(emoji, `#${new THREE.Color(color).getHexString()}`, 0.75);
+    b.position.y = 0.62;
+    g.add(b);
+    world.add(g);
+    return { g, base: p.y, i };
+  });
+  // Glowing dotted path between the islands.
+  const curve = new THREE.CatmullRomCurve3(points);
+  const pathMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(curve, 200, 0.025, 8, false),
+    new THREE.MeshBasicMaterial({ color: CYAN, transparent: true, opacity: 0.7 })
+  );
+  world.add(pathMesh);
+  const traveller = glow(tex, 0xffffff, 0.7, 1);
+  const travellerC = glow(tex, CYAN, 1.4, 0.8);
+  world.add(travellerC, traveller);
+  // Big star at the top: the goal.
+  const starShape = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 ? 0.22 : 0.5;
+    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
+    if (i === 0) starShape.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    else starShape.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const star = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(starShape, { depth: 0.15, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04, bevelSegments: 3 }),
+    phys(AMBER, { metalness: 0.9, roughness: 0.2, emissive: AMBER, emissiveIntensity: 0.3 })
+  );
+  const last = points[points.length - 1];
+  star.position.set(last.x, last.y + 1.05, last.z);
+  world.add(star);
+  const starGlow = glow(tex, AMBER, 2.6, 0.8);
+  starGlow.position.copy(star.position);
+  world.add(starGlow);
+  const center = glow(tex, VIOLET, 7, 0.45);
+  center.position.z = -2;
+  world.add(center);
+
+  return (t) => {
+    islands.forEach(({ g, base, i }) => {
+      g.position.y = base + Math.sin(t * 0.9 + i) * 0.08;
+      g.rotation.y = Math.sin(t * 0.4 + i) * 0.2;
+    });
+    const k = (t * 0.12) % 1;
+    const p = curve.getPointAt(k);
+    traveller.position.copy(p);
+    travellerC.position.copy(p);
+    star.rotation.y = t * 0.8;
+    starGlow.scale.setScalar(2.6 + Math.sin(t * 2) * 0.25);
+  };
+}
+
+export default function HeroScene3D({
+  className,
+  compact = false,
+  variant = "planet",
+}: {
+  className?: string;
+  compact?: boolean;
+  variant?: SceneVariant;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -199,7 +461,6 @@ export default function HeroScene3D({ className, compact = false }: { className?
     renderer.domElement.style.display = "block";
     renderer.domElement.setAttribute("aria-hidden", "true");
     host.appendChild(renderer.domElement);
-    host.dataset.ready = "true";
 
     const scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(renderer);
@@ -207,12 +468,12 @@ export default function HeroScene3D({ className, compact = false }: { className?
     scene.environment = envTex;
 
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-    camera.position.set(0, 1.4, 10);
-    camera.lookAt(0, 0.3, 0);
+    camera.position.set(0, 0.6, 10);
+    camera.lookAt(0, 0, 0);
 
     scene.add(new THREE.HemisphereLight(0xc4b5fd, 0x1e1b4b, 0.9));
     const key = new THREE.DirectionalLight(0xffffff, 2.4);
-    key.position.set(3, 6, 5);
+    key.position.set(4, 5, 5);
     scene.add(key);
     const violetLight = new THREE.PointLight(VIOLET, 40, 14);
     violetLight.position.set(-3, 1.5, 2);
@@ -225,106 +486,10 @@ export default function HeroScene3D({ className, compact = false }: { className?
     const world = new THREE.Group();
     scene.add(world);
 
-    // Central glow behind everything.
-    const backGlow = glow(tex, VIOLET, 7.5, 0.55);
-    backGlow.position.set(0, 0.2, -2);
-    world.add(backGlow);
-    const backGlow2 = glow(tex, BLUE, 5, 0.45);
-    backGlow2.position.set(1.2, -0.6, -1.5);
-    world.add(backGlow2);
+    const update =
+      variant === "ai" ? buildAi(world, tex, isSmall) : variant === "path" ? buildPath(world, tex) : buildPlanet(world, tex, isSmall);
 
-    // Books + cap.
-    const stack = new THREE.Group();
-    const b1 = buildBook(2.7, 0.4, 1.8, BLUE);
-    b1.position.y = -0.95;
-    const b2 = buildBook(2.3, 0.36, 1.6, VIOLET);
-    b2.position.y = -0.55;
-    b2.rotation.y = 0.2;
-    const b3 = buildBook(1.9, 0.32, 1.4, PINK);
-    b3.position.y = -0.2;
-    b3.rotation.y = -0.14;
-    const cap = buildCap();
-    cap.position.y = -0.04;
-    cap.rotation.y = 0.5;
-    stack.add(b1, b2, b3, cap);
-    world.add(stack);
-
-    // Glowing platform.
-    const platform = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.1, 2.3, 0.14, 64),
-      phys(0x1e1b4b, { metalness: 0.6, roughness: 0.3 })
-    );
-    platform.position.y = -1.25;
-    world.add(platform);
-    const platformRing = new THREE.Mesh(
-      new THREE.TorusGeometry(2.2, 0.03, 12, 96),
-      new THREE.MeshBasicMaterial({ color: CYAN })
-    );
-    platformRing.rotation.x = Math.PI / 2;
-    platformRing.position.y = -1.18;
-    world.add(platformRing);
-    const floorGlow = glow(tex, CYAN, 5.5, 0.35);
-    floorGlow.position.set(0, -1.3, 0);
-    world.add(floorGlow);
-
-    // Two tilted orbit rings with "planets".
-    const orbits: { pivot: THREE.Group; speed: number }[] = [];
-    const ringDefs: [number, number, number, number[]][] = [
-      [3.1, 0.35, 0.2, [VIOLET_LIGHT, CYAN, AMBER]],
-      [3.7, -0.45, -0.3, [PINK, BLUE]],
-    ];
-    ringDefs.forEach(([radius, tiltX, tiltZ, colors], ri) => {
-      const holder = new THREE.Group();
-      holder.rotation.set(Math.PI / 2 + tiltX, 0, tiltZ);
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.012, 8, 160),
-        new THREE.MeshBasicMaterial({ color: ri ? PINK : VIOLET_LIGHT, transparent: true, opacity: 0.55 })
-      );
-      holder.add(ring);
-      const pivot = new THREE.Group();
-      holder.add(pivot);
-      colors.forEach((c, i) => {
-        const a = (i / colors.length) * Math.PI * 2;
-        const planet = new THREE.Mesh(
-          new THREE.SphereGeometry(ri ? 0.16 : 0.2, 32, 32),
-          phys(c, { emissive: c, emissiveIntensity: 0.5, metalness: 0.2 })
-        );
-        planet.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
-        const pg = glow(tex, c, 0.9, 0.7);
-        pg.position.copy(planet.position);
-        pivot.add(planet, pg);
-      });
-      world.add(holder);
-      orbits.push({ pivot, speed: ri ? -0.18 : 0.25 });
-    });
-
-    const compass = buildCompass();
-    compass.position.set(-2.5, 1.55, 0.4);
-    world.add(compass);
-    const arrow = buildArrow();
-    arrow.position.set(2.5, 1.25, 0.2);
-    world.add(arrow);
-
-    // Glassy crystals.
-    const crystalMat = (c: number) =>
-      phys(c, { roughness: 0.05, metalness: 0.1, iridescence: 1, iridescenceIOR: 1.6, transparent: true, opacity: 0.9 });
-    const floaters: { mesh: THREE.Object3D; base: THREE.Vector3; speed: number; phase: number }[] = [];
-    const shapes: [THREE.BufferGeometry, number, [number, number, number]][] = [
-      [new THREE.IcosahedronGeometry(0.28, 0), AMBER, [-2.9, -0.5, 1]],
-      [new THREE.OctahedronGeometry(0.26, 0), VIOLET_LIGHT, [2.8, -0.7, 1.1]],
-      [new THREE.TorusKnotGeometry(0.16, 0.06, 64, 8), CYAN, [-1.4, 2.5, -0.4]],
-      [new THREE.DodecahedronGeometry(0.2, 0), PINK, [1.4, 2.6, 0.3]],
-      [new THREE.TetrahedronGeometry(0.26, 0), BLUE, [0.3, -2.0, 1.8]],
-      [new THREE.OctahedronGeometry(0.16, 0), CYAN, [-0.8, -1.9, 2.2]],
-    ];
-    shapes.forEach(([geo, color, [x, y, z]], i) => {
-      const mesh = new THREE.Mesh(geo, crystalMat(color));
-      mesh.position.set(x, y, z);
-      world.add(mesh);
-      floaters.push({ mesh, base: new THREE.Vector3(x, y, z), speed: 0.55 + i * 0.12, phase: i * 1.2 });
-    });
-
-    // Particle field.
+    // Background star dust.
     const count = isSmall ? 260 : 600;
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
@@ -344,20 +509,12 @@ export default function HeroScene3D({ className, compact = false }: { className?
     pGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
     const particles = new THREE.Points(
       pGeo,
-      new THREE.PointsMaterial({
-        size: 0.09,
-        map: tex,
-        vertexColors: true,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      })
+      new THREE.PointsMaterial({ size: 0.09, map: tex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
     );
     scene.add(particles);
 
     if (compact) world.scale.setScalar(0.85);
 
-    // Pointer parallax (whole window, so it reacts even over the text).
     const target = { x: 0, y: 0 };
     const onPointer = (e: PointerEvent) => {
       target.x = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -373,7 +530,7 @@ export default function HeroScene3D({ className, compact = false }: { className?
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
       camera.aspect = w / h;
-      camera.position.z = w / h < 1 ? 13.5 : w / h < 1.3 ? 11.5 : 10;
+      camera.position.z = w / h < 1 ? 14 : w / h < 1.3 ? 12 : 10.5;
       camera.updateProjectionMatrix();
     };
     const ro = new ResizeObserver(() => {
@@ -386,27 +543,22 @@ export default function HeroScene3D({ className, compact = false }: { className?
     const clock = new THREE.Clock();
     let raf = 0;
     let visible = true;
+    let firstFrame = true;
 
     const tick = () => {
       raf = 0;
       const t = clock.getElapsedTime();
       const scroll = Math.min(window.scrollY / Math.max(window.innerHeight, 1), 1.5);
-      world.rotation.y += (target.x * 0.5 + Math.sin(t * 0.2) * 0.3 + scroll * 0.6 - world.rotation.y) * 0.05;
-      world.rotation.x += (target.y * 0.2 + scroll * 0.25 - world.rotation.x) * 0.05;
-      stack.position.y = Math.sin(t * 1.1) * 0.1;
-      cap.rotation.y = 0.5 + Math.sin(t * 0.6) * 0.25;
-      compass.rotation.z = Math.sin(t * 0.8) * 0.35;
-      compass.position.y = 1.55 + Math.sin(t * 0.9 + 1) * 0.14;
-      arrow.position.y = 1.25 + Math.sin(t + 2) * 0.12;
-      orbits.forEach((o) => (o.pivot.rotation.z = t * o.speed));
-      floaters.forEach((f) => {
-        f.mesh.position.y = f.base.y + Math.sin(t * f.speed + f.phase) * 0.22;
-        f.mesh.rotation.x = t * f.speed * 0.7;
-        f.mesh.rotation.y = t * f.speed;
-      });
+      world.rotation.y += (target.x * 0.45 + Math.sin(t * 0.2) * 0.2 + scroll * 0.6 - world.rotation.y) * 0.05;
+      world.rotation.x += (target.y * 0.18 + scroll * 0.25 - world.rotation.x) * 0.05;
+      world.position.y = Math.sin(t * 0.8) * 0.08;
+      update(t);
       particles.rotation.y = t * 0.02;
-      platformRing.scale.setScalar(1 + Math.sin(t * 2) * 0.015);
       renderer.render(scene, camera);
+      if (firstFrame) {
+        firstFrame = false;
+        host.dataset.ready = "true";
+      }
       if (visible) raf = requestAnimationFrame(tick);
     };
 
@@ -421,7 +573,9 @@ export default function HeroScene3D({ className, compact = false }: { className?
     let io: IntersectionObserver | null = null;
     const onVisibility = () => (document.hidden ? stop() : start());
     if (reduceMotion) {
+      update(2);
       renderer.render(scene, camera);
+      host.dataset.ready = "true";
     } else {
       io = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
@@ -443,7 +597,11 @@ export default function HeroScene3D({ className, compact = false }: { className?
         const m = obj as THREE.Mesh;
         if (m.geometry) m.geometry.dispose();
         const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-        if (mat) (Array.isArray(mat) ? mat : [mat]).forEach((x) => x.dispose());
+        if (mat)
+          (Array.isArray(mat) ? mat : [mat]).forEach((x) => {
+            (x as THREE.SpriteMaterial).map?.dispose();
+            x.dispose();
+          });
       });
       tex.dispose();
       envTex.dispose();
@@ -452,7 +610,7 @@ export default function HeroScene3D({ className, compact = false }: { className?
       renderer.domElement.remove();
       delete host.dataset.ready;
     };
-  }, [compact]);
+  }, [compact, variant]);
 
   return <div ref={hostRef} className={className} aria-hidden="true" />;
 }
