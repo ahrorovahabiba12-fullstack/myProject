@@ -6,8 +6,7 @@ import clsx from "clsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { dtmApi, DtmBlock, DtmResult, DtmStart } from "../../lib/api";
 import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
-import { RobotMascot } from "../../components/three/RobotMascot";
-import { DtmTickets, DtmArena } from "./variants/DtmPicker";
+import { DtmArena } from "./variants/DtmPicker";
 import { Button } from "../../components/ui/Button";
 
 const BLOCK_INFO: Record<DtmBlock, { q: number; p: number }> = {
@@ -48,78 +47,11 @@ export default function Dtm() {
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
 
-  const v = params.get("v");
-  if (v === "a" || v === "b") {
-    const Picker = v === "a" ? DtmTickets : DtmArena;
-    return (
-      <>
-        <Picker list={list} careerSubjects={careerSubjects} info={BLOCK_INFO} onStart={(subject, block) => start.mutate({ subject, block })} pending={start.isPending} />
-        {start.isError && <p className="text-sm text-red-600 mt-3">{t("dtm.startError")}</p>}
-      </>
-    );
-  }
-
   return (
-    <div>
-      <div className="hero-3d relative overflow-hidden rounded-card p-6 text-white mb-4">
-        <RobotMascot className="absolute right-0 top-0 w-24 h-32 sm:w-44 sm:h-48" />
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2 pr-24 sm:pr-44">📝 {t("dtm.title")}</h1>
-        <p className="text-white/90 pr-20 sm:pr-44">{t("dtm.intro")}</p>
-        <div className="grid grid-cols-3 gap-2 mt-4 text-center text-sm sm:mr-40">
-          {(["compulsory", "first", "second"] as DtmBlock[]).map((b) => (
-            <div key={b} className="rounded-xl bg-white/15 p-2">
-              <p className="font-semibold">{t(`dtm.block_${b}`)}</p>
-              <p className="text-white/80">
-                {BLOCK_INFO[b].q} × {BLOCK_INFO[b].p}
-              </p>
-            </div>
-          ))}
-        </div>
-        <p className="text-white/80 text-xs mt-3">{t("dtm.maxNote")}</p>
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-3">
-        {list.map((s) => {
-          const idx = careerSubjects.indexOf(s.code);
-          const blocks: DtmBlock[] = s.compulsory ? ["compulsory", "first", "second"] : ["first", "second"];
-          return (
-            <Card key={s.code} className={clsx(idx !== -1 && "ring-2 ring-brand-400")}>
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="font-bold">{s.name}</p>
-                {idx !== -1 && (
-                  <span className="text-xs rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-2 py-0.5">
-                    {t(idx === 0 ? "dtm.yourFirst" : "dtm.yourSecond")}
-                  </span>
-                )}
-              </div>
-              {s.available === 0 ? (
-                <p className="text-sm text-[var(--text-secondary)]">⏳ {t("dtm.comingSoon")}</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {blocks.map((b) => (
-                    <button
-                      key={b}
-                      onClick={() => start.mutate({ subject: s.code, block: b })}
-                      disabled={start.isPending}
-                      className={clsx(
-                        "text-sm rounded-lg px-3 py-1.5 font-semibold transition",
-                        (idx === 0 && b === "first") || (idx === 1 && b === "second")
-                          ? "bg-brand-600 text-white hover:bg-brand-700"
-                          : "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 hover:bg-brand-100"
-                      )}
-                    >
-                      {t(`dtm.block_${b}`)} · {BLOCK_INFO[b].q}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+    <>
+      <DtmArena list={list} careerSubjects={careerSubjects} info={BLOCK_INFO} onStart={(subject, block) => start.mutate({ subject, block })} pending={start.isPending} />
       {start.isError && <p className="text-sm text-red-600 mt-3">{t("dtm.startError")}</p>}
-      <p className="text-xs text-[var(--text-secondary)] mt-4">{t("dtm.sourceNote")}</p>
-    </div>
+    </>
   );
 }
 

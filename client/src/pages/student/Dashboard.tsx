@@ -1,85 +1,17 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useOutletContext } from "react-router-dom";
-import { Sparkles, Info, Sunrise, Check, Flame, Star, BookOpenCheck, Trophy, Compass, MessageCircle, TrendingUp, Lock, ChevronRight, FileText } from "lucide-react";
-import clsx from "clsx";
-import { studentApi, recommendationApi, dailyCoachApi, DashboardSummary } from "../../lib/api";
+import { Sparkles, Info, Sunrise, Check, Flame } from "lucide-react";
+import { recommendationApi, dailyCoachApi, DashboardSummary } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { DailyMotivation } from "../../components/dashboard/DailyMotivation";
-import { RobotMascot } from "../../components/three/RobotMascot";
-import CommandCenter from "./dashboards/CommandCenter";
-import AdventureMap from "./dashboards/AdventureMap";
-import OrbitHub from "./dashboards/OrbitHub";
+
 import Studio from "./dashboards/Studio";
 
 // More than 4 distinct subjects tested in one day is a genuinely strong
 // showing — worth calling out, not just quietly logged.
 const HIGH_ACTIVITY_SUBJECT_THRESHOLD = 4;
-
-function StatPill({ icon, iconBg, value, label }: { icon: React.ReactNode; iconBg: string; value: string | number; label: string }) {
-  return (
-    <Card className="flex items-center gap-3.5 py-3.5 pl-3.5">
-      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>{icon}</div>
-      <div className="min-w-0">
-        <p className="text-xl font-extrabold leading-tight">{value}</p>
-        <p className="text-xs text-[var(--text-secondary)] truncate">{label}</p>
-      </div>
-    </Card>
-  );
-}
-
-type Tone = "violet" | "amber" | "sky" | "emerald" | "rose";
-
-const TONES: Record<Tone, { tile: string; icon: string }> = {
-  violet: { tile: "from-brand-500 to-accentBlue text-white", icon: "bg-white/20 text-white" },
-  amber: { tile: "from-amber-400 to-orange-500 text-white", icon: "bg-white/20 text-white" },
-  sky: { tile: "from-sky-400 to-cyan-500 text-white", icon: "bg-white/20 text-white" },
-  emerald: { tile: "from-emerald-400 to-teal-500 text-white", icon: "bg-white/20 text-white" },
-  rose: { tile: "from-rose-400 to-pink-500 text-white", icon: "bg-white/20 text-white" },
-};
-
-/** A big, colourful, tappable tile — the main way into each section, sized
- * for small hands (the app is used from grade 1). */
-function ActionTile({
-  to,
-  icon,
-  title,
-  description,
-  tone,
-  locked,
-}: {
-  to: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  tone: Tone;
-  locked?: boolean;
-}) {
-  const body = (
-    <div
-      className={clsx(
-        "relative h-full rounded-card p-4 sm:p-5 flex flex-col gap-3 bg-gradient-to-br shadow-card overflow-hidden transition-transform",
-        TONES[tone].tile,
-        locked ? "opacity-60 grayscale-[30%]" : ""
-      )}
-    >
-      <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/10" aria-hidden="true" />
-      <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center icon-3d", TONES[tone].icon)}>{locked ? <Lock size={22} /> : icon}</div>
-      <div className="flex-1">
-        <p className="font-extrabold text-base sm:text-lg leading-snug">{title}</p>
-        <p className="text-xs sm:text-sm text-white/85 mt-1">{description}</p>
-      </div>
-      {!locked && <ChevronRight className="absolute right-4 top-5 text-white/70 hidden sm:block" size={22} aria-hidden="true" />}
-    </div>
-  );
-  if (locked) return <div aria-disabled="true">{body}</div>;
-  return (
-    <Link to={to} data-tilt className="block h-full rounded-card focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
-      {body}
-    </Link>
-  );
-}
 
 function DailyCoachCard() {
   const { t } = useTranslation();
@@ -143,106 +75,22 @@ function DailyCoachCard() {
 }
 
 export default function Dashboard() {
-  // ?dash=a|b|c previews the new dashboard layouts.
-  const dash = new URLSearchParams(window.location.search).get("dash");
-  if (dash === "a") return <CommandCenter />;
-  if (dash === "b") return <AdventureMap />;
-  if (dash === "c") return <OrbitHub />;
-  if (dash === "d") return <Studio />;
-  return <ClassicDashboard />;
-}
-
-function ClassicDashboard() {
-  const { t } = useTranslation();
-  const { dashboard } = useOutletContext<{ dashboard?: DashboardSummary }>();
-
-  const profile = useQuery({ queryKey: ["profile"], queryFn: studentApi.getProfile });
-  const recommendation = useQuery({ queryKey: ["recommendation-learning"], queryFn: recommendationApi.getLearning });
-
-  const careerVisible = dashboard?.careerModuleVisible ?? profile.data?.careerModuleVisible ?? false;
-  const levels = profile.data?.subjectLevels ?? [];
-  const avgScore = levels.length ? Math.round(levels.reduce((sum, s) => sum + s.score, 0) / levels.length) : 0;
-
   return (
     <div className="flex flex-col gap-6">
-      {/* HERO — greeting */}
-      <div className="hero-3d relative overflow-hidden rounded-card text-white px-5 py-6 sm:px-8 sm:py-7 flex items-center justify-between gap-2 sm:gap-6">
-        <div className="absolute -left-10 -top-10 w-40 h-40 rounded-full bg-white/10" aria-hidden="true" />
-        <div className="relative">
-          <p className="text-xs font-extrabold tracking-wide uppercase text-white/80 mb-1.5">{t("dashboard.welcomeEyebrow")}</p>
-          <h1 className="text-2xl sm:text-[28px] font-extrabold mb-1.5">
-            {t("dashboard.greeting", { name: dashboard?.fullName ?? profile.data?.fullName ?? "" })}
-          </h1>
-          <p className="text-white/85 max-w-md">{t("dashboard.subtitle")}</p>
-          {dashboard?.grade && (
-            <span className="inline-block mt-3 text-xs font-bold bg-white/20 rounded-full px-3 py-1">
-              {dashboard.grade}-{t("profile.grade")}
-            </span>
-          )}
-        </div>
-        <RobotMascot className="shrink-0 w-28 h-36 sm:w-[220px] sm:h-[210px] -my-6 -mr-4 sm:-my-10" />
-      </div>
+      <Studio />
+      <DashboardExtras />
+    </div>
+  );
+}
 
-      {/* Main sections — big tiles */}
-      <section aria-labelledby="quick-actions">
-        <h2 id="quick-actions" className="font-bold text-lg mb-3">
-          {t("dashboard.quickActionsTitle")}
-        </h2>
-        <div className={clsx("grid grid-cols-2 gap-3 sm:gap-4", careerVisible ? "md:grid-cols-3 xl:grid-cols-5" : "xl:grid-cols-4")}>
-          <ActionTile
-            to="/quiz"
-            tone="violet"
-            icon={<BookOpenCheck size={24} />}
-            title={t("dashboard.actionQuizTitle")}
-            description={t("dashboard.actionQuizDesc")}
-          />
-          <ActionTile
-            to="/career"
-            tone="amber"
-            icon={<Compass size={24} />}
-            title={t("dashboard.actionCareerTitle")}
-            description={careerVisible ? t("dashboard.actionCareerDesc") : t("dashboard.actionCareerLocked")}
-            locked={!careerVisible}
-          />
-          {careerVisible && (
-            <ActionTile
-              to="/dtm"
-              tone="rose"
-              icon={<FileText size={24} />}
-              title={t("dashboard.actionDtmTitle")}
-              description={t("dashboard.actionDtmDesc")}
-            />
-          )}
-          <ActionTile
-            to="/chat"
-            tone="sky"
-            icon={<MessageCircle size={24} />}
-            title={t("dashboard.actionChatTitle")}
-            description={t("dashboard.actionChatDesc")}
-          />
-          <ActionTile
-            to="/progress"
-            tone="emerald"
-            icon={<TrendingUp size={24} />}
-            title={t("dashboard.actionProgressTitle")}
-            description={t("dashboard.actionProgressDesc")}
-          />
-        </div>
-      </section>
+/** Daily coach, AI insight and motivation, under the main dashboard. */
+function DashboardExtras() {
+  const { t } = useTranslation();
+  const { dashboard } = useOutletContext<{ dashboard?: DashboardSummary }>();
+  const recommendation = useQuery({ queryKey: ["recommendation-learning"], queryFn: recommendationApi.getLearning });
 
-      {/* Stat pills */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatPill icon={<Flame size={20} className="text-amber-600" />} iconBg="bg-amber-100" value={dashboard?.streakDays ?? 0} label={t("dashboard.streakUnit")} />
-        <StatPill icon={<Star size={20} className="text-brand-600" />} iconBg="bg-brand-100" value={dashboard?.points ?? 0} label={t("dashboard.pointsUnit")} />
-        <StatPill
-          icon={<BookOpenCheck size={20} className="text-sky-600" />}
-          iconBg="bg-sky-100"
-          value={dashboard?.todaySubjectCount ?? 0}
-          label={t("dashboard.todaySubjectsUnit")}
-        />
-        <StatPill icon={<Trophy size={20} className="text-emerald-600" />} iconBg="bg-emerald-100" value={dashboard?.badgeCount ?? 0} label={t("dashboard.badgesUnit")} />
-      </div>
-
+  return (
+    <>
       {dashboard && dashboard.todaySubjectCount > HIGH_ACTIVITY_SUBJECT_THRESHOLD && (
         <Card className="flex items-center gap-4 py-3 bg-amber-50 border-amber-200 animate-scale-in">
           <span className="shrink-0 rounded-full bg-amber-100 p-2 text-amber-600">
@@ -282,39 +130,8 @@ function ClassicDashboard() {
           </Card>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <DailyMotivation />
-
-          <Card>
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className="font-bold text-lg">{t("dashboard.learningHealth")}</h2>
-            </div>
-            {profile.isLoading ? (
-              <Skeleton className="h-24" />
-            ) : levels.length === 0 ? (
-              <EmptyState icon="📚" title={t("progress.noLevelsTitle")} description={t("progress.noLevelsDesc")} />
-            ) : (
-              <>
-                <p className="text-4xl font-extrabold text-brand-600 mb-3">
-                  {avgScore}
-                  <span className="text-lg text-[var(--text-secondary)] font-medium">/100</span>
-                </p>
-                <div className="flex flex-col gap-2">
-                  {levels.slice(0, 5).map((s) => (
-                    <div key={s.subjectCode} className="flex items-center gap-2">
-                      <span className="text-sm w-24 shrink-0 truncate">{s.subjectNameUz}</span>
-                      <div className="flex-1 h-2 bg-brand-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-gradient" style={{ width: `${s.score}%` }} />
-                      </div>
-                      <span className="text-xs text-[var(--text-secondary)] w-8 text-right">{Math.round(s.score)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </Card>
-        </div>
+        <DailyMotivation />
       </div>
-    </div>
+    </>
   );
 }

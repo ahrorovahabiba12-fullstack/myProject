@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import clsx from "clsx";
+import { Clock } from "lucide-react";
 import { DtmBlock, DtmSubjects } from "../../../lib/api";
 import { RobotMascot } from "../../../components/three/RobotMascot";
 import { Ring } from "../dashboards/shared";
@@ -19,68 +20,7 @@ const BLOCK_COLORS: Record<DtmBlock, [string, string]> = {
   second: ["#f472b6", "#db2777"],
 };
 
-/** DTM A — "Imtihon chiptalari": each subject is a 3D exam ticket with a
- * perforated edge; blocks are big glossy pill buttons. */
-export function DtmTickets({ list, careerSubjects, info, onStart, pending }: Props) {
-  const { t } = useTranslation();
-  return (
-    <div>
-      <div className="cc-hero relative overflow-hidden rounded-[1.75rem] text-white p-6 sm:p-8 mb-5 flex items-center gap-4">
-        <div className="flex-1">
-          <h1 className="text-3xl sm:text-4xl font-black mb-2">🎟️ {t("dtm.title")}</h1>
-          <p className="text-white/80 max-w-xl">{t("dtm.intro")}</p>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {BLOCKS.map((b) => (
-              <span key={b} className="glass rounded-full px-3 py-1.5 text-sm font-bold">
-                {t(`dtm.block_${b}`)} · {info[b].q} × {info[b].p}
-              </span>
-            ))}
-            <span className="rounded-full px-3 py-1.5 text-sm font-black bg-amber-300 text-amber-950">max 189</span>
-          </div>
-        </div>
-        <RobotMascot className="w-28 h-32 sm:w-44 sm:h-48 shrink-0 -my-4" />
-      </div>
-      <div className="grid sm:grid-cols-2 gap-4">
-        {list.map((s) => {
-          const look = styleFor(s.code);
-          const idx = careerSubjects.indexOf(s.code);
-          const blocks: DtmBlock[] = s.compulsory ? BLOCKS : ["first", "second"];
-          return (
-            <div key={s.code} data-tilt className={clsx("ticket card !p-0 flex overflow-hidden", idx !== -1 && "ring-2 ring-brand-400")}>
-              <div className="w-24 sm:w-28 shrink-0 flex flex-col items-center justify-center text-white relative" style={{ background: `linear-gradient(160deg, ${look.from}, ${look.to})` }}>
-                <look.Icon className="w-10 h-10" />
-                <span className="text-[10px] font-black mt-2 tracking-widest">DTM</span>
-              </div>
-              <div className="ticket-body flex-1 p-4">
-                <p className="font-black text-lg">{s.name}</p>
-                {idx !== -1 && <p className="text-xs text-brand-600 dark:text-brand-300 font-semibold">{t(idx === 0 ? "dtm.yourFirst" : "dtm.yourSecond")}</p>}
-                {s.available === 0 ? (
-                  <p className="text-sm text-[var(--text-secondary)] mt-2">⏳ {t("dtm.comingSoon")}</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {blocks.map((b) => (
-                      <button
-                        key={b}
-                        disabled={pending}
-                        onClick={() => onStart(s.code, b)}
-                        className="pill-3d text-white text-sm font-bold rounded-full px-3.5 py-1.5"
-                        style={{ background: `linear-gradient(135deg, ${BLOCK_COLORS[b][0]}, ${BLOCK_COLORS[b][1]})` }}
-                      >
-                        {t(`dtm.block_${b}`)} · {info[b].q}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** DTM B — "Arena": a big 189-point ring, the three blocks as glowing 3D
+/** DTM subject picker ("Arena"): a big 189-point ring, the three blocks as glowing 3D
  * podium columns, and subjects as glossy spheres with block buttons. */
 export function DtmArena({ list, careerSubjects, info, onStart, pending }: Props) {
   const { t } = useTranslation();
@@ -130,8 +70,13 @@ export function DtmArena({ list, careerSubjects, info, onStart, pending }: Props
                 <look.Icon className="w-8 h-8 text-white" />
               </div>
               <p className="font-black">{s.name}</p>
+              {idx !== -1 && (
+                <span className="text-[11px] rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-2 py-0.5 mt-1">
+                  {t(idx === 0 ? "dtm.yourFirst" : "dtm.yourSecond")}
+                </span>
+              )}
               {s.available === 0 ? (
-                <p className="text-xs text-[var(--text-secondary)] mt-2">⏳ {t("dtm.comingSoon")}</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-2 inline-flex items-center gap-1"><Clock size={12} /> {t("dtm.comingSoon")}</p>
               ) : (
                 <div className="flex flex-wrap justify-center gap-1.5 mt-3">
                   {blocks.map((b) => (
@@ -151,6 +96,7 @@ export function DtmArena({ list, careerSubjects, info, onStart, pending }: Props
           );
         })}
       </div>
+      <p className="text-xs text-[var(--text-secondary)] mt-4">{t("dtm.sourceNote")}</p>
     </div>
   );
 }

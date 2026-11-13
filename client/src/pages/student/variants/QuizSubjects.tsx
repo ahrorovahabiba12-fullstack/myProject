@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, BookOpenCheck, ChevronRight, FileText } from "lucide-react";
 import { quizApi, studentApi, QuizSubject } from "../../../lib/api";
-import { Skeleton } from "../../../components/ui/primitives";
+import { EmptyState, ErrorState, Skeleton } from "../../../components/ui/primitives";
+import { MIN_CAREER_GRADE } from "../../../constants/grades";
 import { RobotMascot } from "../../../components/three/RobotMascot";
 import { styleFor } from "../subjectStyle";
 
@@ -13,55 +15,7 @@ function useSubjectsWithScores() {
   return { subjects, score };
 }
 
-/** Testlar A — "Fan sayyoralari": dark space panel, robot greeting, each
- * subject a glossy 3D planet with its knowledge score as an orbit ring. */
-export function QuizSubjectsPlanets({ onPick }: { onPick: (s: QuizSubject) => void }) {
-  const { t } = useTranslation();
-  const { subjects, score } = useSubjectsWithScores();
-  return (
-    <div className="cc-hero rounded-[1.75rem] text-white p-5 sm:p-8 relative overflow-hidden">
-      <div className="flex items-center gap-4 mb-6">
-        <RobotMascot className="w-24 h-28 sm:w-32 sm:h-36 -my-4 shrink-0" />
-        <div>
-          <h1 className="text-2xl sm:text-4xl font-black">{t("quiz.pickSubjectTitle")}</h1>
-          {subjects.data && <p className="text-white/75 mt-1">{t("quiz.pickSubjectSubtitle", { grade: subjects.data.grade })}</p>}
-        </div>
-      </div>
-      {subjects.isLoading ? (
-        <Skeleton className="h-64" />
-      ) : (
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-y-8 gap-x-3">
-          {subjects.data?.subjects.map((s, i) => {
-            const look = styleFor(s.code);
-            const sc = score(s.code);
-            return (
-              <button key={s.code} onClick={() => onPick(s)} className="group flex flex-col items-center text-center focus:outline-none">
-                <div className="relative" style={{ animation: `chip-float 5s ease-in-out ${-i * 0.7}s infinite` }}>
-                  <div className="absolute -inset-3 rounded-full border-2 border-dashed border-white/25 group-hover:border-white/60 transition-colors" />
-                  <div
-                    className="w-20 h-20 sm:w-28 sm:h-28 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-                    style={{
-                      background: `radial-gradient(circle at 32% 28%, #ffffffcc 0, transparent 32%), radial-gradient(circle at 70% 78%, rgba(0,0,0,0.3), transparent 55%), linear-gradient(145deg, ${look.from}, ${look.to})`,
-                      boxShadow: `0 0 44px -6px ${look.from}, 0 22px 40px -16px ${look.to}`,
-                    }}
-                  >
-                    <look.Icon className="w-9 h-9 sm:w-12 sm:h-12 text-white drop-shadow" strokeWidth={2} />
-                  </div>
-                  {sc !== undefined && (
-                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[11px] font-black bg-white text-brand-700 rounded-full px-2 py-0.5 shadow-lg">{Math.round(sc)}%</span>
-                  )}
-                </div>
-                <p className="mt-4 font-bold text-sm sm:text-base">{s.name}</p>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Testlar B — "3D kartalar": tall full-colour cards with a huge floating
+/** Subject picker ("3D kartalar"): tall full-colour cards with a huge floating
  * icon, the subject name and a knowledge bar; cards tilt with the mouse. */
 export function QuizSubjectsCards({ onPick }: { onPick: (s: QuizSubject) => void }) {
   const { t } = useTranslation();
@@ -70,7 +24,7 @@ export function QuizSubjectsCards({ onPick }: { onPick: (s: QuizSubject) => void
     <div>
       <div className="flex items-end justify-between gap-4 mb-5">
         <div>
-          <p className="section-badge !text-brand-600 dark:!text-cyan-300 !border-brand-300/40 dark:!border-cyan-300/30">📚 {t("dashboard.actionQuizTitle")}</p>
+          <p className="section-badge !text-brand-600 dark:!text-cyan-300 !border-brand-300/40 dark:!border-cyan-300/30 !inline-flex items-center gap-1.5"><BookOpenCheck size={14} /> {t("dashboard.actionQuizTitle")}</p>
           <h1 className="text-3xl sm:text-4xl font-black mt-3">{t("quiz.pickSubjectTitle")}</h1>
           {subjects.data && <p className="text-[var(--text-secondary)] mt-1">{t("quiz.pickSubjectSubtitle", { grade: subjects.data.grade })}</p>}
         </div>
@@ -78,6 +32,10 @@ export function QuizSubjectsCards({ onPick }: { onPick: (s: QuizSubject) => void
       </div>
       {subjects.isLoading ? (
         <Skeleton className="h-64" />
+      ) : subjects.isError ? (
+        <ErrorState message={t("quiz.loadError")} onRetry={() => subjects.refetch()} />
+      ) : !subjects.data?.subjects.length ? (
+        <EmptyState icon={<BookOpenCheck size={28} />} title={t("quiz.noSubjects")} />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5">
           {subjects.data?.subjects.map((s) => {
@@ -111,6 +69,21 @@ export function QuizSubjectsCards({ onPick }: { onPick: (s: QuizSubject) => void
             );
           })}
         </div>
+      )}
+      {subjects.data && subjects.data.grade >= MIN_CAREER_GRADE && (
+        <Link
+          to="/dtm"
+          className="mt-5 flex items-center gap-4 rounded-[1.6rem] p-4 sm:p-5 text-white bg-gradient-to-br from-rose-400 to-pink-600 shadow-card hover:-translate-y-0.5 transition-transform"
+        >
+          <span className="w-12 h-12 rounded-2xl bg-white/20 inline-flex items-center justify-center shrink-0" aria-hidden="true">
+            <FileText size={24} />
+          </span>
+          <div className="flex-1">
+            <p className="font-extrabold text-lg">{t("quiz.dtmBannerTitle")}</p>
+            <p className="text-sm text-white/90">{t("quiz.dtmBannerDesc")}</p>
+          </div>
+          <ChevronRight size={22} aria-hidden="true" />
+        </Link>
       )}
     </div>
   );

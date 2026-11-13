@@ -4,14 +4,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen } from "lucide-react";
 import clsx from "clsx";
-import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
-import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { RobotMascot } from "../../components/three/RobotMascot";
 import { Button } from "../../components/ui/Button";
 
-import { styleFor } from "./subjectStyle";
-import { QuizSubjectsPlanets, QuizSubjectsCards } from "./variants/QuizSubjects";
+import { QuizSubjectsCards } from "./variants/QuizSubjects";
 
 function StepHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
   const { t } = useTranslation();
@@ -31,74 +29,6 @@ function StepHeader({ title, subtitle, back }: { title: string; subtitle?: strin
         {subtitle && <p className="text-[var(--text-secondary)] mt-1">{subtitle}</p>}
       </div>
       <RobotMascot className="shrink-0 w-16 h-20 sm:w-24 sm:h-28 -my-3" />
-    </div>
-  );
-}
-
-/** Screen 1 — the subjects taught in the student's own grade. */
-function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
-  const { t } = useTranslation();
-  const subjects = useQuery({ queryKey: ["quiz-subjects"], queryFn: quizApi.subjects });
-
-  return (
-    <div>
-      <StepHeader title={t("quiz.pickSubjectTitle")} subtitle={subjects.data ? t("quiz.pickSubjectSubtitle", { grade: subjects.data.grade }) : undefined} />
-      {subjects.isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
-        </div>
-      ) : subjects.isError ? (
-        <ErrorState message={t("quiz.loadError")} onRetry={() => subjects.refetch()} />
-      ) : !subjects.data?.subjects.length ? (
-        <EmptyState icon="📚" title={t("quiz.noSubjects")} />
-      ) : (
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-          {subjects.data.subjects.map((s) => (
-            <button
-              key={s.code}
-              onClick={() => onPick(s)}
-              data-tilt
-              className="group text-left rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm hover:shadow-card active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
-            >
-              <div className="relative h-20 sm:h-32 flex items-center justify-center mb-2 sm:mb-3">
-                {(() => {
-                  const look = styleFor(s.code);
-                  return (
-                    <span
-                      className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white transition-transform group-hover:scale-110 group-hover:-translate-y-1"
-                      style={{ background: `linear-gradient(140deg, ${look.from}, ${look.to})`, boxShadow: `inset 0 3px 0 rgba(255,255,255,0.35), inset 0 -6px 10px rgba(0,0,0,0.2), 0 14px 24px -10px ${look.to}` }}
-                      aria-hidden="true"
-                    >
-                      <look.Icon className="w-8 h-8 sm:w-11 sm:h-11" strokeWidth={2} />
-                    </span>
-                  );
-                })()}
-              </div>
-              <div className="flex items-center justify-between gap-1">
-                <p className="font-extrabold text-[13px] leading-tight sm:text-lg">{s.name}</p>
-                <span className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 flex items-center justify-center" aria-hidden="true">
-                  <ChevronRight size={16} />
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-      {subjects.data && subjects.data.grade >= MIN_CAREER_GRADE && (
-        <Link
-          to="/dtm"
-          className="mt-5 flex items-center gap-4 rounded-card p-4 sm:p-5 text-white bg-gradient-to-br from-rose-400 to-pink-500 shadow-card hover:-translate-y-0.5 transition-transform"
-        >
-          <span className="text-3xl" aria-hidden="true">📝</span>
-          <div className="flex-1">
-            <p className="font-extrabold text-lg">{t("quiz.dtmBannerTitle")}</p>
-            <p className="text-sm text-white/90">{t("quiz.dtmBannerDesc")}</p>
-          </div>
-          <ChevronRight size={22} aria-hidden="true" />
-        </Link>
-      )}
     </div>
   );
 }
@@ -476,12 +406,9 @@ export default function Quiz() {
   if (subject) {
     return <GradePicker subject={subject} ownGrade={subjects.data?.grade} onPick={(g) => go({ subject: subject.code, grade: g })} onBack={() => go({})} />;
   }
-  const v = params.get("v");
-  if (v === "a") return <QuizSubjectsPlanets onPick={(s) => go({ subject: s.code })} />;
-  if (v === "b") return <QuizSubjectsCards onPick={(s) => go({ subject: s.code })} />;
   return (
     <>
-      <SubjectPicker onPick={(s) => go({ subject: s.code })} />
+      <QuizSubjectsCards onPick={(s) => go({ subject: s.code })} />
       <p className="mt-6 text-sm text-[var(--text-secondary)] flex items-center gap-2">
         <BookOpen size={16} /> {t("quiz.pickSubjectHint")}
       </p>
