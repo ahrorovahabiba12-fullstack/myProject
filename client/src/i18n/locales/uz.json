@@ -538,6 +538,41 @@
     "topicUniQ": "Qaysi universitetga kirsam bo'ladi?",
     "topicStudy": "Fanlar",
     "topicStudyQ": "Matematikani qanday yaxshilasam bo'ladi?",
-    "askAbout": "Mavzu tanlang"
+    "askAbout": "Mavzu tanlang",
+    "deckCareers": [
+      {
+        "code": "SOFTWARE_ENGINEER",
+        "name": "Dasturchi",
+        "exam": "Matematika, Fizika"
+      },
+      {
+        "code": "MEDICINE",
+        "name": "Shifokor",
+        "exam": "Biologiya, Kimyo"
+      },
+      {
+        "code": "DESIGNER",
+        "name": "Dizayner",
+        "exam": "Matematika, Ona tili + ijodiy imtihon"
+      },
+      {
+        "code": "CIVIL_ENGINEER",
+        "name": "Muhandis",
+        "exam": "Matematika, Fizika"
+      },
+      {
+        "code": "LAWYER",
+        "name": "Huquqshunos",
+        "exam": "Tarix, Ingliz tili"
+      },
+      {
+        "code": "ARCHITECT",
+        "name": "Arxitektor",
+        "exam": "Matematika, Fizika + ijodiy imtihon"
+      }
+    ],
+    "examLabel": "DTM fanlari",
+    "more": "Batafsil",
+    "flipHint": "Kartani bosing: qaysi fanlar kerakligini ko'rasiz"
   }
 }
