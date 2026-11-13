@@ -42,7 +42,18 @@
     "featuresBadge": "Imkoniyatlar",
     "featuresTitle": "Hammasi bitta joyda",
     "ctaTitle": "Kelajagingizni bugun boshlang",
-    "ctaSub": "Ro'yxatdan o'tish bepul va bir daqiqa vaqt oladi."
+    "ctaSub": "Ro'yxatdan o'tish bepul va bir daqiqa vaqt oladi.",
+    "kineticQuestion": "Kelajakda kim bo'lasiz?",
+    "kineticCareers": [
+      "Dasturchi",
+      "Shifokor",
+      "Dizayner",
+      "Muhandis",
+      "Huquqshunos",
+      "Olim",
+      "Arxitektor",
+      "O'qituvchi"
+    ]
   },
   "auth": {
     "loginTitle": "Xush kelibsiz!",

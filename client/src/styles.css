@@ -376,3 +376,57 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .app-stars { animation: none; }
 }
+
+/* ---------- Kinetic (non-WebGL) hero ---------- */
+.kinetic .blob {
+  position: absolute;
+  inset: 12%;
+  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+  filter: blur(2px);
+  animation: blob-morph 9s ease-in-out infinite alternate, blob-spin 24s linear infinite;
+}
+.kinetic .blob-a { background: linear-gradient(135deg, #6d28d9, #4338ca 45%, #0891b2); opacity: 1; box-shadow: 0 0 120px -10px rgba(124, 77, 255, 0.9); }
+.kinetic .blob-b { background: linear-gradient(200deg, #ec4899, #7c3aed 60%); opacity: 0.45; mix-blend-mode: screen; inset: 16%; animation-duration: 11s, 30s; animation-direction: alternate, reverse; }
+.kinetic .blob-c { background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35), transparent 45%); inset: 18%; animation-duration: 7s, 40s; }
+@keyframes blob-morph {
+  0% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; }
+  50% { border-radius: 63% 37% 41% 59% / 57% 61% 39% 43%; }
+  100% { border-radius: 37% 63% 52% 48% / 46% 38% 62% 54%; }
+}
+@keyframes blob-spin { to { transform: rotate(360deg); } }
+.kinetic-word { animation: word-in 0.6s cubic-bezier(0.2, 0.9, 0.2, 1.2) both; }
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(40%) scale(0.85); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.kinetic .chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  font-size: 30px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: chip-float 5s ease-in-out infinite;
+}
+.kinetic .chip-a { top: 6%; left: 14%; }
+.kinetic .chip-b { top: 4%; right: 16%; animation-delay: -1s; }
+.kinetic .chip-c { top: 44%; left: 0; animation-delay: -2s; }
+.kinetic .chip-d { top: 46%; right: 0; animation-delay: -3s; }
+.kinetic .chip-e { bottom: 4%; left: 18%; animation-delay: -1.5s; }
+.kinetic .chip-f { bottom: 6%; right: 14%; animation-delay: -2.5s; }
+@keyframes chip-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-14px) rotate(4deg); }
+}
+@media (max-width: 640px) {
+  .kinetic .chip { width: 48px; height: 48px; font-size: 22px; border-radius: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kinetic .blob, .kinetic .chip, .kinetic-word { animation: none; }
+}

@@ -10,6 +10,7 @@ import type { SceneVariant } from "../../components/three/HeroScene3D";
 
 // three.js is heavy, so the 3D scene is downloaded separately, only here.
 const HeroScene3D = lazy(() => import("../../components/three/HeroScene3D"));
+const KineticHero = lazy(() => import("../../components/three/KineticHero"));
 
 const FEATURES = [
   { icon: ClipboardCheck, titleKey: "landing.feature1Title", descKey: "landing.feature1Desc", color: "from-violet-500 to-fuchsia-500" },
@@ -29,7 +30,7 @@ export default function Landing() {
   const revealRef = useReveal<HTMLDivElement>();
   // ?scene=planet|ai|path lets us preview the other 3D looks.
   const sceneParam = new URLSearchParams(window.location.search).get("scene");
-  const variant: SceneVariant = sceneParam === "ai" || sceneParam === "path" ? sceneParam : "planet";
+  const variant: SceneVariant = (["planet", "ai", "path", "robot", "student"] as const).find((v) => v === sceneParam) ?? "planet";
 
   return (
     // The landing always uses the dark "space" look, whatever the app theme.
@@ -58,7 +59,7 @@ export default function Landing() {
         {/* 3D scene: behind the text on phones, on the right on desktop */}
         <div className="absolute inset-x-0 top-0 h-[52svh] lg:static lg:h-[620px] lg:order-2 -z-10 lg:z-0 opacity-90 lg:opacity-100">
           <Suspense fallback={null}>
-            <HeroScene3D className="w-full h-full" variant={variant} />
+            {sceneParam === "kinetic" ? <KineticHero /> : <HeroScene3D className="w-full h-full" variant={variant} />}
           </Suspense>
         </div>
 
