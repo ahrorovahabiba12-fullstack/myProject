@@ -1,4 +1,3 @@
-import { Suspense, lazy } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Sparkles, Brain, TrendingUp, GraduationCap, ClipboardCheck } from "lucide-react";
@@ -6,9 +5,6 @@ import { Button } from "../../components/ui/Button";
 import { LanguageSwitcher } from "../../components/layout/LanguageSwitcher";
 import { ThemeToggle } from "../../components/layout/ThemeToggle";
 import { LogoIcon } from "../../components/icons/LogoIcon";
-
-// three.js is heavy, so the 3D scene is downloaded separately, only here.
-const HeroScene3D = lazy(() => import("../../components/three/HeroScene3D"));
 
 const FEATURES = [
   { icon: ClipboardCheck, titleKey: "landing.feature1Title", descKey: "landing.feature1Desc" },
@@ -23,7 +19,7 @@ const FEATURES = [
  * "progress" — original artwork, not a stock illustration. */
 function HeroIllustration() {
   return (
-    <svg width="100%" height="100%" viewBox="0 0 420 380" className="max-w-[420px] mx-auto" aria-hidden="true">
+    <svg width="100%" height="380" viewBox="0 0 420 380" className="max-w-[420px] justify-self-center hidden lg:block" aria-hidden="true">
       <defs>
         <linearGradient id="landingHeroGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#6c3ffb" />
@@ -78,17 +74,17 @@ export default function Landing() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center py-8 lg:py-12">
+        <div className="grid lg:grid-cols-2 gap-12 items-center py-12">
           <div>
             <span className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
               <Sparkles size={14} /> {t("landing.badge")}
             </span>
-            <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-2">
+            <h1 className="text-5xl font-extrabold leading-tight mb-2">
               {t("landing.title1")}
               <br />
               {t("landing.title2")}
             </h1>
-            <p className="text-3xl sm:text-4xl font-bold text-brand-500 italic mb-6">{t("landing.titleHighlight")}</p>
+            <p className="text-4xl font-bold text-brand-500 italic mb-6">{t("landing.titleHighlight")}</p>
             <p className="text-lg text-[var(--text-secondary)] max-w-md mb-8">{t("landing.subtitle")}</p>
 
             <div className="flex flex-wrap gap-4">
@@ -103,12 +99,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* 3D scene; the flat illustration shows while it loads */}
-          <div className="relative w-full h-[280px] sm:h-[360px] lg:h-[440px] touch-pan-y">
-            <Suspense fallback={<HeroIllustration />}>
-              <HeroScene3D className="absolute inset-0 cursor-grab" />
-            </Suspense>
-          </div>
+          <HeroIllustration />
         </div>
 
         {/* Features — full-width row below the hero */}
