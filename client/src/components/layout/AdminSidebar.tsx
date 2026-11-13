@@ -16,10 +16,10 @@ export function AdminSidebar() {
   const items = useAdminNavItems();
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-[#1a1533] text-white min-h-screen px-4 py-6 gap-1">
-      <div className="flex items-center gap-2 font-bold text-lg px-2 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center">
-          <ShieldCheck size={18} />
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-0 z-20 h-screen overflow-y-auto sidebar-3d text-white px-4 py-6 gap-1">
+      <div className="flex items-center gap-2.5 font-bold text-lg px-2 mb-6">
+        <div className="w-10 h-10 rounded-2xl bg-brand-gradient flex items-center justify-center icon-3d glow-violet logo-3d">
+          <ShieldCheck size={20} />
         </div>
         AI Advisor
       </div>
@@ -30,12 +30,12 @@ export function AdminSidebar() {
           end={item.end}
           className={({ isActive }) =>
             clsx(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-              isActive ? "bg-brand-500 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"
+              "flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium transition-colors",
+              isActive ? "bg-brand-gradient text-white shadow-md shadow-brand-900/40" : "text-white/70 hover:bg-white/5 hover:text-white"
             )
           }
         >
-          <item.icon size={18} />
+          <item.icon size={19} />
           {item.label}
         </NavLink>
       ))}
