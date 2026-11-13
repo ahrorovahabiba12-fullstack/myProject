@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import clsx from "clsx";
-import { Bot, BookOpen, Compass, FileText, GraduationCap, Send, Sparkles, type LucideIcon } from "lucide-react";
+import { BookOpen, Compass, FileText, GraduationCap, Send, Sparkles, type LucideIcon } from "lucide-react";
 import { RobotMascot } from "../../../components/three/RobotMascot";
 import { Skeleton } from "../../../components/ui/primitives";
 
@@ -72,9 +72,7 @@ export function ChatStage(p: ChatViewProps) {
     <div className={clsx("grid lg:grid-cols-[1fr_400px] gap-4", H)}>
       <section className="stage-hero relative overflow-hidden rounded-[1.75rem] text-white flex flex-col min-h-0 max-lg:h-[300px] max-lg:shrink-0">
         <div className="relative z-10 p-4 sm:p-6 flex items-center gap-3">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           <h1 className="font-black text-lg sm:text-2xl">{t("aiChat.title")}</h1>
-          <span className="text-xs text-emerald-300 font-semibold">{t("variants.online")}</span>
         </div>
 
         {/* speech bubble */}
@@ -147,9 +145,6 @@ export function ChatStage(p: ChatViewProps) {
 function AiLine({ children }: { children: ReactNode }) {
   return (
     <div className="self-start flex items-start gap-2.5 max-w-[92%] sm:max-w-[80%]">
-      <span className="w-9 h-9 shrink-0 rounded-xl bg-brand-gradient text-white flex items-center justify-center icon-3d">
-        <Bot size={19} />
-      </span>
       <div className="ai-glow rounded-2xl rounded-tl-md px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">{children}</div>
     </div>
   );

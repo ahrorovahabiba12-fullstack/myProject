@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Bot, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { chatApi, ChatHistory } from "../../lib/api";
 import { Button } from "../../components/ui/Button";
 import { Skeleton } from "../../components/ui/primitives";
@@ -77,7 +77,7 @@ export default function AIChat() {
     const list = (
       <div className={clsx("flex-1 overflow-y-auto flex flex-col gap-3 p-3 sm:p-5", messenger && "chat-bg")}>
         {messenger && messages.length === 0 && !history.isLoading && (
-          <AiBubble avatar>{t("variants.chatHello")}</AiBubble>
+          <AiBubble>{t("variants.chatHello")}</AiBubble>
         )}
         {history.isLoading ? (
           <Skeleton className="h-16 w-2/3" />
@@ -88,14 +88,14 @@ export default function AIChat() {
                 {m.content}
               </div>
             ) : (
-              <AiBubble key={m.id} avatar={messenger}>
+              <AiBubble key={m.id}>
                 {m.content}
               </AiBubble>
             )
           )
         )}
         {sending && (
-          <AiBubble avatar={messenger}>
+          <AiBubble>
             <span className="typing text-brand-500"><span /><span /><span /></span>
           </AiBubble>
         )}
@@ -132,9 +132,6 @@ export default function AIChat() {
             <RobotMascot className="w-24 h-28 lg:w-60 lg:h-64 shrink-0" />
             <div>
               <h1 className="text-xl lg:text-3xl font-black">{t("aiChat.title")}</h1>
-              <p className="text-sm text-emerald-300 font-semibold flex items-center gap-1.5 lg:justify-center mt-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {t("variants.online")}
-              </p>
               <div className="hidden lg:block mt-6">{chips}</div>
             </div>
           </aside>
@@ -156,7 +153,6 @@ export default function AIChat() {
           </div>
           <div className="flex-1">
             <h1 className="font-black">{t("aiChat.title")}</h1>
-            <p className="text-xs text-white/80 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-300" /> {t("variants.online")}</p>
           </div>
         </div>
         {list}
@@ -238,10 +234,9 @@ export default function AIChat() {
   );
 }
 
-function AiBubble({ children, avatar }: { children: React.ReactNode; avatar?: boolean }) {
+function AiBubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="self-start flex items-end gap-2 max-w-[85%]">
-      {avatar && <span className="w-8 h-8 shrink-0 rounded-full bg-brand-gradient flex items-center justify-center text-base icon-3d text-white"><Bot size={17} /></span>}
       <div className="bubble-ai rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">{children}</div>
     </div>
   );
