@@ -11,6 +11,7 @@ import { RobotMascot } from "../../components/three/RobotMascot";
 import CommandCenter from "./dashboards/CommandCenter";
 import AdventureMap from "./dashboards/AdventureMap";
 import OrbitHub from "./dashboards/OrbitHub";
+import Studio from "./dashboards/Studio";
 
 // More than 4 distinct subjects tested in one day is a genuinely strong
 // showing — worth calling out, not just quietly logged.
@@ -147,6 +148,7 @@ export default function Dashboard() {
   if (dash === "a") return <CommandCenter />;
   if (dash === "b") return <AdventureMap />;
   if (dash === "c") return <OrbitHub />;
+  if (dash === "d") return <Studio />;
   return <ClassicDashboard />;
 }
 
