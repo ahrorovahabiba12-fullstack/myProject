@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useOutletContext } from "react-router-dom";
@@ -7,6 +8,8 @@ import { studentApi, recommendationApi, dailyCoachApi, DashboardSummary } from "
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { DailyMotivation } from "../../components/dashboard/DailyMotivation";
+
+const HeroScene3D = lazy(() => import("../../components/three/HeroScene3D"));
 
 // More than 4 distinct subjects tested in one day is a genuinely strong
 // showing — worth calling out, not just quietly logged.
@@ -81,7 +84,7 @@ function ActionTile({
       )}
     >
       <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/10" aria-hidden="true" />
-      <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center", TONES[tone].icon)}>{locked ? <Lock size={22} /> : icon}</div>
+      <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center icon-3d", TONES[tone].icon)}>{locked ? <Lock size={22} /> : icon}</div>
       <div className="flex-1">
         <p className="font-extrabold text-base sm:text-lg leading-snug">{title}</p>
         <p className="text-xs sm:text-sm text-white/85 mt-1">{description}</p>
@@ -172,7 +175,7 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
       {/* HERO — greeting */}
-      <div className="relative overflow-hidden rounded-card bg-brand-gradient text-white px-6 py-7 sm:px-8 flex items-center justify-between gap-6 shadow-card">
+      <div className="hero-3d relative overflow-hidden rounded-card text-white px-6 py-7 sm:px-8 flex items-center justify-between gap-6">
         <div className="absolute -left-10 -top-10 w-40 h-40 rounded-full bg-white/10" aria-hidden="true" />
         <div className="relative">
           <p className="text-xs font-extrabold tracking-wide uppercase text-white/80 mb-1.5">{t("dashboard.welcomeEyebrow")}</p>
@@ -186,7 +189,11 @@ export default function Dashboard() {
             </span>
           )}
         </div>
-        <HeroIllustration />
+        <div className="relative shrink-0 hidden sm:block w-[280px] h-[200px] -my-8 -mr-4">
+          <Suspense fallback={<HeroIllustration />}>
+            <HeroScene3D className="absolute inset-0" compact />
+          </Suspense>
+        </div>
       </div>
 
       {/* Main sections — big tiles */}

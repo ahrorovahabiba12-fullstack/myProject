@@ -79,8 +79,8 @@ function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
                   const look = styleFor(s.code);
                   return (
                     <span
-                      className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white transition-transform group-hover:scale-105"
-                      style={{ background: `linear-gradient(140deg, ${look.from}, ${look.to})`, boxShadow: `0 10px 18px -8px ${look.to}` }}
+                      className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white transition-transform group-hover:scale-110 group-hover:-translate-y-1"
+                      style={{ background: `linear-gradient(140deg, ${look.from}, ${look.to})`, boxShadow: `inset 0 3px 0 rgba(255,255,255,0.35), inset 0 -6px 10px rgba(0,0,0,0.2), 0 14px 24px -10px ${look.to}` }}
                       aria-hidden="true"
                     >
                       <look.Icon className="w-8 h-8 sm:w-11 sm:h-11" strokeWidth={2} />

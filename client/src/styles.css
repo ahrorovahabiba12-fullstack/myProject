@@ -7,16 +7,18 @@
   --bg-card: #ffffff;
   --text-primary: #1a1530;
   --text-secondary: #635f77;
-  --border-subtle: #ece9fb;
+  --border-subtle: #e6e1fb;
+  --bg-glass: rgba(255, 255, 255, 0.72);
   color-scheme: light dark;
 }
 
 .dark {
-  --bg-page: #14101f;
-  --bg-card: #1e1832;
+  --bg-page: #08061a;
+  --bg-card: #17112f;
   --text-primary: #f4f2ff;
-  --text-secondary: #a79fd1;
-  --border-subtle: #2c2447;
+  --text-secondary: #b3abdc;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --bg-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
   color-scheme: dark;
 }
 
@@ -29,7 +31,10 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-card bg-[var(--bg-card)] shadow-card border border-[var(--border-subtle)] p-5;
+    @apply rounded-card shadow-card border border-[var(--border-subtle)] p-5;
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
   .btn-primary {
     @apply bg-brand-gradient text-white font-semibold rounded-xl px-5 py-3 transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
@@ -310,3 +315,64 @@ body {
   50% { transform: perspective(400px) rotateY(18deg) rotateX(-6deg) translateY(-4px); }
 }
 @media (prefers-reduced-motion: reduce) { .auth-card, .logo-3d { animation: none; } }
+
+/* ---------- Signed-in app 3D look (theme aware) ---------- */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 500px at 85% -10%, rgba(139, 107, 255, 0.22), transparent 60%),
+    radial-gradient(800px 500px at 0% 100%, rgba(34, 211, 238, 0.12), transparent 60%),
+    var(--bg-page);
+}
+.app-bg .aurora { opacity: 0.22; }
+.app-bg .grid-floor { opacity: 0.18; height: 45%; }
+.dark .app-bg {
+  background:
+    radial-gradient(1100px 550px at 85% -10%, rgba(124, 77, 255, 0.35), transparent 60%),
+    radial-gradient(900px 500px at 0% 100%, rgba(34, 211, 238, 0.14), transparent 60%),
+    linear-gradient(180deg, #08061a 0%, #0d0830 60%, #08061a 100%);
+}
+.dark .app-bg .aurora { opacity: 0.4; }
+.dark .app-bg .grid-floor { opacity: 0.4; }
+.app-stars { display: none; }
+.dark .app-stars {
+  display: block;
+  position: absolute;
+  inset: -50%;
+  background-image:
+    radial-gradient(1.4px 1.4px at 20% 30%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 70% 80%, #c4b5fd 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 40% 70%, #a5f3fc 50%, transparent 51%),
+    radial-gradient(1px 1px at 85% 20%, #fff 50%, transparent 51%);
+  background-size: 340px 340px;
+  opacity: 0.6;
+  animation: stars-drift 140s linear infinite;
+}
+.sidebar-3d {
+  background:
+    radial-gradient(400px 300px at 0% 0%, rgba(124, 77, 255, 0.45), transparent 70%),
+    radial-gradient(300px 300px at 100% 100%, rgba(34, 211, 238, 0.18), transparent 70%),
+    linear-gradient(180deg, #160f38 0%, #0c0824 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 10px 0 40px -20px rgba(124, 77, 255, 0.6);
+}
+.glass-nav {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.dark .glass-nav { background: rgba(12, 8, 36, 0.8); }
+.hero-3d {
+  background:
+    radial-gradient(500px 260px at 85% 50%, rgba(34, 211, 238, 0.35), transparent 70%),
+    radial-gradient(400px 260px at 0% 0%, rgba(244, 114, 182, 0.35), transparent 70%),
+    linear-gradient(135deg, #5b2ee6 0%, #3b2bb8 45%, #1e1b6b 100%);
+  box-shadow: 0 25px 60px -25px rgba(91, 46, 230, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-stars { animation: none; }
+}
