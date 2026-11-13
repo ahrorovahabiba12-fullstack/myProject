@@ -8,6 +8,9 @@ import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/prim
 import { Button } from "../../components/ui/Button";
 import { DailyMotivation } from "../../components/dashboard/DailyMotivation";
 import { RobotMascot } from "../../components/three/RobotMascot";
+import CommandCenter from "./dashboards/CommandCenter";
+import AdventureMap from "./dashboards/AdventureMap";
+import OrbitHub from "./dashboards/OrbitHub";
 
 // More than 4 distinct subjects tested in one day is a genuinely strong
 // showing — worth calling out, not just quietly logged.
@@ -139,6 +142,15 @@ function DailyCoachCard() {
 }
 
 export default function Dashboard() {
+  // ?dash=a|b|c previews the new dashboard layouts.
+  const dash = new URLSearchParams(window.location.search).get("dash");
+  if (dash === "a") return <CommandCenter />;
+  if (dash === "b") return <AdventureMap />;
+  if (dash === "c") return <OrbitHub />;
+  return <ClassicDashboard />;
+}
+
+function ClassicDashboard() {
   const { t } = useTranslation();
   const { dashboard } = useOutletContext<{ dashboard?: DashboardSummary }>();
 

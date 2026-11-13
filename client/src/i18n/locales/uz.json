@@ -510,5 +510,15 @@
     "auto3": "Test yoki DTM mashqi topshirilganda: ota-onaga natija",
     "auto4": "Kasb tanlash testi topshirilganda: mos kasblar (o'quvchi va ota-onaga)",
     "auto5": "Ketma-ket kunlar seriyasi uzilay deganda: o'quvchiga eslatma"
+  },
+  "dash": {
+    "level": "Daraja",
+    "toNext": "Keyingi darajagacha {{n}} ball",
+    "skills": "Fanlar bo'yicha bilim",
+    "mapTitle": "Sizning yo'lingiz",
+    "questsTitle": "Bugungi vazifalar",
+    "quest1": "Bugun 1 ta fandan test yeching",
+    "quest2": "Bugun 3 ta fandan mashq qiling",
+    "quest3": "7 kunlik seriyaga yeting"
   }
 }

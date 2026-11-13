@@ -430,3 +430,87 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .kinetic .blob, .kinetic .chip, .kinetic-word { animation: none; }
 }
+
+/* ---------- Dashboard variants ---------- */
+.cc-hero, .map-panel, .orbit-panel {
+  background:
+    radial-gradient(600px 300px at 15% 0%, rgba(244, 114, 182, 0.35), transparent 70%),
+    radial-gradient(700px 360px at 90% 100%, rgba(34, 211, 238, 0.3), transparent 70%),
+    linear-gradient(135deg, #2a1680 0%, #1b1460 50%, #0e0b3a 100%);
+  box-shadow: 0 30px 70px -30px rgba(91, 46, 230, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.speech {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.speech::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 18px;
+  border: 9px solid transparent;
+  border-right-color: rgba(255, 255, 255, 0.18);
+  border-left: 0;
+}
+@media (max-width: 639px) { .speech::before { display: none; } }
+.ring-anim { transition: stroke-dashoffset 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.text-gradient-brand {
+  background: linear-gradient(90deg, #7c4dff, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bento-emoji { filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.3)); transform: rotate(-12deg); transition: transform 0.4s; }
+[data-tilt]:hover .bento-emoji { transform: rotate(0deg) scale(1.08) translateY(-6px); }
+.skill-bar {
+  background: linear-gradient(180deg, #22d3ee, #7c4dff);
+  box-shadow: 0 0 20px -2px rgba(124, 77, 255, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  animation: bar-grow 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: bottom;
+}
+@keyframes bar-grow { from { transform: scaleY(0); } }
+.xp-bar {
+  background: linear-gradient(90deg, #7c4dff, #22d3ee, #f472b6);
+  background-size: 200% 100%;
+  animation: gradient-shift 4s linear infinite;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.6);
+}
+.chip-stat { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 800; padding: 0.45rem 0.8rem; border-radius: 9999px; }
+.map-dash { animation: dash-move 3s linear infinite; }
+@keyframes dash-move { to { stroke-dashoffset: -52; } }
+.station-wrap { display: block; }
+@media (min-width: 768px) { .station-wrap > div { transform: translateY(var(--off, 0)); } }
+.station {
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: chip-float 4s ease-in-out infinite;
+  transition: transform 0.25s;
+}
+.station-wrap:hover .station { transform: scale(1.12) translateY(-6px); }
+@media (min-width: 640px) { .station { width: 116px; height: 116px; } }
+.orbit-stage { width: min(640px, 100%); aspect-ratio: 1.45; }
+.orbit-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 9999px;
+  border: 1.5px dashed rgba(167, 139, 250, 0.45);
+  transform: translate(-50%, -50%) rotateX(0deg);
+  animation: blob-spin 60s linear infinite;
+}
+.orbit-ring-1 { width: 80%; height: 80%; }
+.orbit-ring-2 { width: 55%; height: 55%; border-color: rgba(34, 211, 238, 0.4); animation-direction: reverse; animation-duration: 40s; }
+.orbit-ring-3 { width: 104%; height: 104%; border-style: solid; border-color: rgba(244, 114, 182, 0.18); }
+@keyframes orbit-spin-fix { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.orbit-ring { animation: none; transform: translate(-50%, -50%); box-shadow: 0 0 30px -10px rgba(124, 77, 255, 0.6); }
+.planet { border-radius: 9999px; animation: chip-float 5s ease-in-out infinite; transition: transform 0.25s; }
+.planet-wrap:hover .planet { transform: scale(1.15); }
+@media (prefers-reduced-motion: reduce) {
+  .skill-bar, .xp-bar, .map-dash, .station, .orbit-ring, .planet { animation: none; }
+}
