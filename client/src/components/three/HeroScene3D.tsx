@@ -436,7 +436,7 @@ function buildPath(world: THREE.Group, tex: THREE.Texture): Updater {
 /* ------------------------------------------------------------------ */
 type Pointer = { x: number; y: number };
 
-function buildRobot(world: THREE.Group, tex: THREE.Texture, pointer: Pointer): Updater {
+function buildRobot(world: THREE.Group, tex: THREE.Texture, pointer: Pointer, minimal = false): Updater {
   const white = phys(0xf8f7ff, { roughness: 0.22, metalness: 0.05, clearcoat: 1 });
   const violet = phys(VIOLET, { roughness: 0.3, metalness: 0.3 });
   const glass = phys(0x0b0820, { roughness: 0.08, metalness: 0.4, clearcoat: 1 });
@@ -565,10 +565,12 @@ function buildRobot(world: THREE.Group, tex: THREE.Texture, pointer: Pointer): U
   const pad2 = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.015, 8, 120), new THREE.MeshBasicMaterial({ color: VIOLET_LIGHT, transparent: true, opacity: 0.6 }));
   pad2.rotation.x = Math.PI / 2;
   pad2.position.y = -2.45;
-  world.add(pad2);
-  const back = glow(tex, VIOLET, 7, 0.5);
-  back.position.z = -2;
-  world.add(back);
+  if (!minimal) world.add(pad2);
+  if (!minimal) {
+    const back = glow(tex, VIOLET, 7, 0.5);
+    back.position.z = -2;
+    world.add(back);
+  }
 
   // Floating career badges around the robot.
   const items: [string, string, [number, number, number]][] = [
@@ -577,7 +579,7 @@ function buildRobot(world: THREE.Group, tex: THREE.Texture, pointer: Pointer): U
     ["🎯", "#f472b6", [-2.6, -0.9, 0.5]],
     ["🚀", "#22d3ee", [2.6, -1.0, 0.6]],
   ];
-  const floaters = items.map(([e, ring, p], i) => {
+  const floaters = (minimal ? [] : items).map(([e, ring, p], i) => {
     const b = badge(e, ring, 0.8);
     b.position.set(...p);
     world.add(b);
@@ -778,10 +780,13 @@ function buildStudent(world: THREE.Group, tex: THREE.Texture, pointer: Pointer):
 export default function HeroScene3D({
   className,
   compact = false,
+  minimal = false,
   variant = "planet",
 }: {
   className?: string;
   compact?: boolean;
+  /** Just the character, no badges or star dust (for small embeds). */
+  minimal?: boolean;
   variant?: SceneVariant;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -813,8 +818,8 @@ export default function HeroScene3D({
     scene.environment = envTex;
 
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-    camera.position.set(0, 0.6, 10);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, minimal ? -0.3 : 0.6, 10);
+    camera.lookAt(0, minimal ? -0.45 : 0, 0);
 
     scene.add(new THREE.HemisphereLight(0xc4b5fd, 0x1e1b4b, 0.9));
     const key = new THREE.DirectionalLight(0xffffff, 2.4);
@@ -838,7 +843,7 @@ export default function HeroScene3D({
         : variant === "path"
           ? buildPath(world, tex)
           : variant === "robot"
-            ? buildRobot(world, tex, target)
+            ? buildRobot(world, tex, target, minimal)
             : variant === "student"
               ? buildStudent(world, tex, target)
               : buildPlanet(world, tex, isSmall);
@@ -867,7 +872,7 @@ export default function HeroScene3D({
       pGeo,
       new THREE.PointsMaterial({ size: 0.09, map: tex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
     );
-    scene.add(particles);
+    if (!minimal) scene.add(particles);
 
     if (character) world.scale.setScalar(1.2);
     if (compact) world.scale.multiplyScalar(0.85);
@@ -886,7 +891,7 @@ export default function HeroScene3D({
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
       camera.aspect = w / h;
-      camera.position.z = w / h < 1 ? 14 : w / h < 1.3 ? 12 : 10.5;
+      camera.position.z = minimal ? 11 : w / h < 1 ? 14 : w / h < 1.3 ? 12 : 10.5;
       camera.updateProjectionMatrix();
     };
     const ro = new ResizeObserver(() => {
@@ -967,7 +972,7 @@ export default function HeroScene3D({
       renderer.domElement.remove();
       delete host.dataset.ready;
     };
-  }, [compact, variant]);
+  }, [compact, minimal, variant]);
 
   return <div ref={hostRef} className={className} aria-hidden="true" />;
 }

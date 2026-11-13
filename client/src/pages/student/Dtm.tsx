@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { dtmApi, DtmBlock, DtmResult, DtmStart } from "../../lib/api";
 import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { RobotMascot } from "../../components/three/RobotMascot";
 import { Button } from "../../components/ui/Button";
 
 const BLOCK_INFO: Record<DtmBlock, { q: number; p: number }> = {
@@ -48,10 +49,11 @@ export default function Dtm() {
 
   return (
     <div>
-      <div className="rounded-card p-6 text-white bg-brand-gradient shadow-card mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">📝 {t("dtm.title")}</h1>
-        <p className="text-white/90">{t("dtm.intro")}</p>
-        <div className="grid grid-cols-3 gap-2 mt-4 text-center text-sm">
+      <div className="hero-3d relative overflow-hidden rounded-card p-6 text-white mb-4">
+        <RobotMascot className="absolute right-0 top-0 w-24 h-32 sm:w-44 sm:h-48" />
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 pr-24 sm:pr-44">📝 {t("dtm.title")}</h1>
+        <p className="text-white/90 pr-20 sm:pr-44">{t("dtm.intro")}</p>
+        <div className="grid grid-cols-3 gap-2 mt-4 text-center text-sm sm:mr-40">
           {(["compulsory", "first", "second"] as DtmBlock[]).map((b) => (
             <div key={b} className="rounded-xl bg-white/15 p-2">
               <p className="font-semibold">{t(`dtm.block_${b}`)}</p>

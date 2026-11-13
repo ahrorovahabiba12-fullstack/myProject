@@ -30,7 +30,7 @@ export default function Landing() {
   const revealRef = useReveal<HTMLDivElement>();
   // ?scene=planet|ai|path lets us preview the other 3D looks.
   const sceneParam = new URLSearchParams(window.location.search).get("scene");
-  const variant: SceneVariant = (["planet", "ai", "path", "robot", "student"] as const).find((v) => v === sceneParam) ?? "planet";
+  const variant: SceneVariant = (["planet", "ai", "path", "robot", "student"] as const).find((v) => v === sceneParam) ?? "robot";
 
   return (
     // The landing always uses the dark "space" look, whatever the app theme.
@@ -63,7 +63,7 @@ export default function Landing() {
           </Suspense>
         </div>
 
-        <div className="pt-[38svh] lg:pt-0 lg:order-1">
+        <div className="pt-[46svh] lg:pt-0 lg:order-1">
           <span className="hero-in inline-flex items-center gap-2 glass text-violet-100 text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-full mb-5">
             <Sparkles size={14} className="text-amber-300" /> {t("landing.badge")}
           </span>

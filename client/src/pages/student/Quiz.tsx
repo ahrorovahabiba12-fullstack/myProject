@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { RobotMascot } from "../../components/three/RobotMascot";
 import { Button } from "../../components/ui/Button";
 
 // Subject tiles: white card, a gradient circle with a white line icon (variant A
@@ -39,10 +40,11 @@ function StepHeader({ title, subtitle, back }: { title: string; subtitle?: strin
           <ChevronLeft size={20} />
         </button>
       )}
-      <div>
+      <div className="flex-1">
         <h1 className="text-2xl font-extrabold">{title}</h1>
         {subtitle && <p className="text-[var(--text-secondary)] mt-1">{subtitle}</p>}
       </div>
+      <RobotMascot className="shrink-0 w-16 h-20 sm:w-24 sm:h-28 -my-3" />
     </div>
   );
 }

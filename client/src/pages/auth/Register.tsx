@@ -7,8 +7,8 @@ import { useAuthStore } from "../../store/authStore";
 import { Input, PasswordInput } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import clsx from "clsx";
-import { LogoIcon } from "../../components/icons/LogoIcon";
 import { SpaceBackground } from "../../components/three/SpaceBackground";
+import { RobotMascot } from "../../components/three/RobotMascot";
 import { ALL_GRADES } from "../../constants/grades";
 
 export default function Register() {
@@ -51,11 +51,9 @@ export default function Register() {
   return (
     <div className="dark space-page min-h-screen flex items-center justify-center text-[var(--text-primary)] px-4 py-10">
       <SpaceBackground />
-      <div className="glass-card auth-card relative z-10 w-full max-w-md p-6 sm:p-8">
+      <div className="glass-card auth-card relative z-10 w-full max-w-md p-6 sm:p-8 mt-16">
         <div className="flex flex-col items-center mb-6">
-          <div className="logo-3d w-14 h-14 rounded-2xl bg-brand-gradient flex items-center justify-center text-white mb-4 icon-3d glow-violet">
-            <LogoIcon size={22} />
-          </div>
+          <RobotMascot className="w-36 h-40 -mt-20 sm:-mt-24 mb-1" />
           <h1 className="text-3xl font-black text-gradient">{t("auth.registerTitle")}</h1>
         </div>
 

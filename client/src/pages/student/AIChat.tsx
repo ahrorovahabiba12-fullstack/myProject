@@ -5,7 +5,7 @@ import { Send } from "lucide-react";
 import { chatApi, ChatHistory } from "../../lib/api";
 import { Button } from "../../components/ui/Button";
 import { Skeleton } from "../../components/ui/primitives";
-import { LogoIcon } from "../../components/icons/LogoIcon";
+import { RobotMascot } from "../../components/three/RobotMascot";
 
 export default function AIChat() {
   const { t } = useTranslation();
@@ -54,9 +54,7 @@ export default function AIChat() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] lg:h-[calc(100vh-3rem)]">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-brand-gradient flex items-center justify-center text-white">
-          <LogoIcon size={20} />
-        </div>
+        <RobotMascot className="w-16 h-16 -my-3" />
         <h1 className="font-bold text-lg">{t("aiChat.title")}</h1>
       </div>
 

@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Compass, RotateCcw, Sparkles } from "lucide-reac
 import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { careerApi, studentApi, CareerTestResult } from "../../lib/api";
 import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
+import { RobotMascot } from "../../components/three/RobotMascot";
 import { Button } from "../../components/ui/Button";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -39,8 +40,9 @@ function Intro({ onStart, hasResult, onBack }: { onStart: () => void; hasResult:
   const { t } = useTranslation();
   return (
     <div className="max-w-2xl">
-      <div className="rounded-card p-6 sm:p-8 text-white bg-brand-gradient shadow-card relative overflow-hidden">
+      <div className="hero-3d rounded-card p-6 sm:p-8 pr-28 sm:pr-52 text-white relative overflow-hidden">
         <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10" aria-hidden="true" />
+        <RobotMascot className="absolute right-0 bottom-0 w-28 h-36 sm:w-48 sm:h-56" />
         <Compass size={36} className="mb-3" aria-hidden="true" />
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t("career.title")}</h1>
         <p className="text-white/90 mb-1">{t("career.introText")}</p>

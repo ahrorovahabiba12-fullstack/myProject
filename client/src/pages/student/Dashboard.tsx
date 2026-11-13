@@ -1,4 +1,3 @@
-import { Suspense, lazy } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useOutletContext } from "react-router-dom";
@@ -8,33 +7,11 @@ import { studentApi, recommendationApi, dailyCoachApi, DashboardSummary } from "
 import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import { DailyMotivation } from "../../components/dashboard/DailyMotivation";
-
-const HeroScene3D = lazy(() => import("../../components/three/HeroScene3D"));
+import { RobotMascot } from "../../components/three/RobotMascot";
 
 // More than 4 distinct subjects tested in one day is a genuinely strong
 // showing — worth calling out, not just quietly logged.
 const HIGH_ACTIVITY_SUBJECT_THRESHOLD = 4;
-
-/** Purely decorative — a graduation cap resting on a stack of books, drawn
- * in the app's own brand palette rather than a stock illustration. */
-function HeroIllustration() {
-  return (
-    <svg width="170" height="150" viewBox="0 0 240 220" className="shrink-0 hidden sm:block" aria-hidden="true">
-      <circle cx="130" cy="120" r="105" fill="#ffffff" opacity="0.12" />
-      <circle cx="55" cy="180" r="30" fill="#ffffff" opacity="0.1" />
-      <circle cx="34" cy="55" r="5" fill="#fcd34d" />
-      <circle cx="212" cy="70" r="4" fill="#ffffff" />
-      <path d="M45 26 L48 34 L56 37 L48 40 L45 48 L42 40 L34 37 L42 34 Z" fill="#fcd34d" />
-      <rect x="55" y="150" width="150" height="20" rx="6" fill="#c7d2fe" />
-      <rect x="70" y="130" width="120" height="18" rx="6" fill="#a5b4fc" />
-      <rect x="82" y="112" width="96" height="16" rx="6" fill="#ffffff" />
-      <polygon points="130,62 195,90 130,118 65,90" fill="#1a1533" />
-      <circle cx="130" cy="90" r="6" fill="#8b6bff" />
-      <path d="M182 84 L188 118" stroke="#fcd34d" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="188.5" cy="121" r="5" fill="#fcd34d" />
-    </svg>
-  );
-}
 
 function StatPill({ icon, iconBg, value, label }: { icon: React.ReactNode; iconBg: string; value: string | number; label: string }) {
   return (
@@ -175,7 +152,7 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
       {/* HERO — greeting */}
-      <div className="hero-3d relative overflow-hidden rounded-card text-white px-6 py-7 sm:px-8 flex items-center justify-between gap-6">
+      <div className="hero-3d relative overflow-hidden rounded-card text-white px-5 py-6 sm:px-8 sm:py-7 flex items-center justify-between gap-2 sm:gap-6">
         <div className="absolute -left-10 -top-10 w-40 h-40 rounded-full bg-white/10" aria-hidden="true" />
         <div className="relative">
           <p className="text-xs font-extrabold tracking-wide uppercase text-white/80 mb-1.5">{t("dashboard.welcomeEyebrow")}</p>
@@ -189,11 +166,7 @@ export default function Dashboard() {
             </span>
           )}
         </div>
-        <div className="relative shrink-0 hidden sm:block w-[280px] h-[200px] -my-8 -mr-4">
-          <Suspense fallback={<HeroIllustration />}>
-            <HeroScene3D className="absolute inset-0" compact />
-          </Suspense>
-        </div>
+        <RobotMascot className="shrink-0 w-28 h-36 sm:w-[220px] sm:h-[210px] -my-6 -mr-4 sm:-my-10" />
       </div>
 
       {/* Main sections — big tiles */}
