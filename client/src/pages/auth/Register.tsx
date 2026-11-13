@@ -8,6 +8,7 @@ import { Input, PasswordInput } from "../../components/ui/primitives";
 import { Button } from "../../components/ui/Button";
 import clsx from "clsx";
 import { LogoIcon } from "../../components/icons/LogoIcon";
+import { SpaceBackground } from "../../components/three/SpaceBackground";
 import { ALL_GRADES } from "../../constants/grades";
 
 export default function Register() {
@@ -48,13 +49,14 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-page)] px-4 py-10">
-      <div className="card w-full max-w-md">
+    <div className="dark space-page min-h-screen flex items-center justify-center text-[var(--text-primary)] px-4 py-10">
+      <SpaceBackground />
+      <div className="glass-card auth-card relative z-10 w-full max-w-md p-6 sm:p-8">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-brand-gradient flex items-center justify-center text-white mb-3">
+          <div className="logo-3d w-14 h-14 rounded-2xl bg-brand-gradient flex items-center justify-center text-white mb-4 icon-3d glow-violet">
             <LogoIcon size={22} />
           </div>
-          <h1 className="text-2xl font-bold">{t("auth.registerTitle")}</h1>
+          <h1 className="text-3xl font-black text-gradient">{t("auth.registerTitle")}</h1>
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-5">
@@ -125,14 +127,14 @@ export default function Register() {
               {error}
             </p>
           )}
-          <Button type="submit" loading={loading} className="w-full mt-2">
+          <Button type="submit" loading={loading} className="w-full mt-2 glow-violet">
             {t("auth.submitRegister")}
           </Button>
         </form>
 
         <p className="text-center text-sm text-[var(--text-secondary)] mt-6">
           {t("auth.haveAccount")}{" "}
-          <Link to="/login" className="text-brand-600 font-semibold hover:underline">
+          <Link to="/login" className="text-cyan-300 font-semibold hover:underline">
             {t("auth.switchToLogin")}
           </Link>
         </p>
