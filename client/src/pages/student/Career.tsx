@@ -8,6 +8,7 @@ import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { careerApi, studentApi, CareerTestResult } from "../../lib/api";
 import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { RobotMascot } from "../../components/three/RobotMascot";
+import { CareerIntroGuide, CareerIntroDeck } from "./variants/CareerIntro";
 import { Button } from "../../components/ui/Button";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -33,7 +34,11 @@ export default function Career() {
 
   if (mode === "test") return <TestRunner onCancel={() => setMode("auto")} onDone={() => setMode("auto")} />;
   if (mode === "auto" && latest.data) return <ResultView result={latest.data} onRetake={() => setMode("test")} />;
-  return <Intro onStart={() => setMode("test")} hasResult={!!latest.data} onBack={() => setMode("auto")} />;
+  const v = new URLSearchParams(window.location.search).get("v");
+  const introProps = { onStart: () => setMode("test"), hasResult: !!latest.data, onBack: () => setMode("auto") };
+  if (v === "a") return <CareerIntroGuide {...introProps} />;
+  if (v === "b") return <CareerIntroDeck {...introProps} />;
+  return <Intro {...introProps} />;
 }
 
 function Intro({ onStart, hasResult, onBack }: { onStart: () => void; hasResult: boolean; onBack: () => void }) {

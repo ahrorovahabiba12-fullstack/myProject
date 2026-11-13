@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen, BookOpenText, Calculator, Globe, Languages, Atom, FlaskConical, Sprout, Laptop, Landmark, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Lightbulb, RotateCcw, ListChecks, Sparkles, Award, BookOpen } from "lucide-react";
 import clsx from "clsx";
 import { MIN_CAREER_GRADE } from "../../constants/grades";
 import { quizApi, QuizStart, QuizSubject, QuizSubmitResult } from "../../lib/api";
@@ -10,22 +10,8 @@ import { Card, EmptyState, ErrorState, Skeleton } from "../../components/ui/prim
 import { RobotMascot } from "../../components/three/RobotMascot";
 import { Button } from "../../components/ui/Button";
 
-// Subject tiles: white card, a gradient circle with a white line icon (variant A
-// Habiba picked), name and an arrow chip below.
-type SubjectLook = { Icon: LucideIcon; from: string; to: string };
-const SUBJECT_STYLE: Record<string, SubjectLook> = {
-  MATH: { Icon: Calculator, from: "#5b8cff", to: "#7c5cff" },
-  MOTHER_LANG: { Icon: BookOpenText, from: "#8bc34a", to: "#3fae5a" },
-  ENGLISH: { Icon: Globe, from: "#36c2e0", to: "#2f8ee8" },
-  RUSSIAN: { Icon: Languages, from: "#f59e6b", to: "#ef6c5a" },
-  PHYSICS: { Icon: Atom, from: "#4cc9a6", to: "#14a394" },
-  CHEMISTRY: { Icon: FlaskConical, from: "#f7c948", to: "#f0a020" },
-  BIOLOGY: { Icon: Sprout, from: "#9ccc65", to: "#43a047" },
-  INFORMATICS: { Icon: Laptop, from: "#7a5cff", to: "#3d6fe0" },
-  HISTORY: { Icon: Landmark, from: "#e0a15f", to: "#c2703d" },
-};
-const styleFor = (code: string): SubjectLook =>
-  SUBJECT_STYLE[code] ?? { Icon: BookOpen, from: "#8b6cff", to: "#6c3ffb" };
+import { styleFor } from "./subjectStyle";
+import { QuizSubjectsPlanets, QuizSubjectsCards } from "./variants/QuizSubjects";
 
 function StepHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
   const { t } = useTranslation();
@@ -490,6 +476,9 @@ export default function Quiz() {
   if (subject) {
     return <GradePicker subject={subject} ownGrade={subjects.data?.grade} onPick={(g) => go({ subject: subject.code, grade: g })} onBack={() => go({})} />;
   }
+  const v = params.get("v");
+  if (v === "a") return <QuizSubjectsPlanets onPick={(s) => go({ subject: s.code })} />;
+  if (v === "b") return <QuizSubjectsCards onPick={(s) => go({ subject: s.code })} />;
   return (
     <>
       <SubjectPicker onPick={(s) => go({ subject: s.code })} />

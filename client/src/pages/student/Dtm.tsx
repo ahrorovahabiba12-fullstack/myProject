@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { dtmApi, DtmBlock, DtmResult, DtmStart } from "../../lib/api";
 import { Card, ErrorState, Skeleton } from "../../components/ui/primitives";
 import { RobotMascot } from "../../components/three/RobotMascot";
+import { DtmTickets, DtmArena } from "./variants/DtmPicker";
 import { Button } from "../../components/ui/Button";
 
 const BLOCK_INFO: Record<DtmBlock, { q: number; p: number }> = {
@@ -46,6 +47,17 @@ export default function Dtm() {
     const ib = careerSubjects.indexOf(b.code);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
+
+  const v = params.get("v");
+  if (v === "a" || v === "b") {
+    const Picker = v === "a" ? DtmTickets : DtmArena;
+    return (
+      <>
+        <Picker list={list} careerSubjects={careerSubjects} info={BLOCK_INFO} onStart={(subject, block) => start.mutate({ subject, block })} pending={start.isPending} />
+        {start.isError && <p className="text-sm text-red-600 mt-3">{t("dtm.startError")}</p>}
+      </>
+    );
+  }
 
   return (
     <div>

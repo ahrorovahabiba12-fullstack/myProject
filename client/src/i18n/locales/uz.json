@@ -520,5 +520,13 @@
     "quest1": "Bugun 1 ta fandan test yeching",
     "quest2": "Bugun 3 ta fandan mashq qiling",
     "quest3": "7 kunlik seriyaga yeting"
+  },
+  "variants": {
+    "careerHeadline": "Qaysi kasb aynan sizga mos?",
+    "chipQuestions": "36 savol",
+    "chipTime": "~5 daqiqa",
+    "chipResult": "Mos kasblar ro'yxati",
+    "online": "onlayn",
+    "chatHello": "Salom! Men sizning AI maslahatchingizman. Fanlar, kasb yoki universitet haqida so'rang."
   }
 }
