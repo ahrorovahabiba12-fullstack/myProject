@@ -77,7 +77,7 @@ function ActionTile({
       className={clsx(
         "relative h-full rounded-card p-4 sm:p-5 flex flex-col gap-3 bg-gradient-to-br shadow-card overflow-hidden transition-transform",
         TONES[tone].tile,
-        locked ? "opacity-60 grayscale-[30%]" : "hover:-translate-y-0.5 active:scale-[0.99]"
+        locked ? "opacity-60 grayscale-[30%]" : ""
       )}
     >
       <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/10" aria-hidden="true" />
@@ -91,7 +91,7 @@ function ActionTile({
   );
   if (locked) return <div aria-disabled="true">{body}</div>;
   return (
-    <Link to={to} className="block h-full rounded-card focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+    <Link to={to} data-tilt className="block h-full rounded-card focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
       {body}
     </Link>
   );

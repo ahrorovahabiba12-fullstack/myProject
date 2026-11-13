@@ -71,7 +71,8 @@ function SubjectPicker({ onPick }: { onPick: (s: QuizSubject) => void }) {
             <button
               key={s.code}
               onClick={() => onPick(s)}
-              className="group text-left rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm transition hover:shadow-card hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
+              data-tilt
+              className="group text-left rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm hover:shadow-card active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"
             >
               <div className="relative h-20 sm:h-32 flex items-center justify-center mb-2 sm:mb-3">
                 {(() => {
@@ -129,6 +130,7 @@ function GradePicker({ subject, ownGrade, onPick, onBack }: { subject: QuizSubje
               key={g}
               disabled={!available}
               onClick={() => onPick(g)}
+              data-tilt
               className={clsx(
                 "relative h-20 rounded-2xl border-2 font-extrabold text-2xl transition-colors flex flex-col items-center justify-center",
                 g === ownGrade
@@ -174,6 +176,7 @@ function TopicPicker({ subject, grade, onPick, onBack }: { subject: QuizSubject;
                 key={topic.id}
                 disabled={!ready}
                 onClick={() => onPick(topic.id)}
+                data-tilt={ready ? "" : undefined}
                 className={clsx(
                   "flex items-center gap-4 text-left rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3.5 transition-colors",
                   ready ? "hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-brand-900/20" : "opacity-60 cursor-not-allowed"

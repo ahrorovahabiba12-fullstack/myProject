@@ -192,8 +192,8 @@ function ResultView({ result, onRetake }: { result: CareerTestResult; onRetake: 
       <h2 className="text-lg font-bold mb-3">{t("career.matchingCareers")}</h2>
       <div className="grid sm:grid-cols-2 gap-4">
         {result.careers.map((c) => (
-          <Link key={c.code} to={`/career/${c.code}`} className="group">
-            <Card className="h-full transition group-hover:shadow-lg group-hover:-translate-y-0.5">
+          <Link key={c.code} to={`/career/${c.code}`} className="group block h-full rounded-card" data-tilt>
+            <Card className="h-full">
               <div className="flex items-start justify-between gap-2 mb-1">
                 <p className="font-bold">{c.name}</p>
                 <span className="text-sm font-semibold text-brand-600 whitespace-nowrap">

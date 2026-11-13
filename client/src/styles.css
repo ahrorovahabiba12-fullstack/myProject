@@ -44,3 +44,70 @@ body {
     @apply animate-pulse bg-brand-100/60 dark:bg-brand-900/40 rounded-xl;
   }
 }
+
+/* ---------- 3D effects ---------- */
+
+/* Cards marked with data-tilt lean towards the mouse (see lib/tilt3d.ts). */
+[data-tilt] {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
+    translateZ(0);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+[data-tilt][data-tilting] {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
+    translateZ(12px) scale(1.015);
+  transition: transform 0.08s linear, box-shadow 0.35s ease;
+  box-shadow: 0 24px 48px -18px rgba(76, 40, 190, 0.45);
+  z-index: 1;
+}
+/* Soft light reflection that follows the pointer. */
+[data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0) 55%
+  );
+}
+.dark [data-tilt]::after {
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(171, 151, 255, 0.22),
+    rgba(171, 151, 255, 0) 55%
+  );
+}
+[data-tilt][data-tilting]::after {
+  opacity: 1;
+}
+/* Touch screens: a physical "press in" instead of tilt. */
+@media (hover: none) {
+  [data-tilt]:active {
+    transform: perspective(900px) rotateX(4deg) translateZ(-6px) scale(0.98);
+    transition-duration: 0.1s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-tilt],
+  [data-tilt][data-tilting],
+  [data-tilt]:active {
+    transform: none !important;
+    transition: none;
+  }
+}
+
+/* Icon badges look like little raised 3D buttons. */
+.icon-3d {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.18),
+    0 6px 14px -6px rgba(76, 40, 190, 0.55);
+}
